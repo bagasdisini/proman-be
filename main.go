@@ -47,18 +47,16 @@ func main() {
 	config.InitConfig(".env")
 	git_api.InitGitlab()
 	db := database.ConnectMongo()
+	var err error
 
-	//projects, _, err := git_api.Client.Projects.ListProjects(&gitlab.ListProjectsOptions{Owned: gitlab.Ptr(true)})
+	//projects, _, err := git_api.Client.Projects.ListProjects(&gitlab.ListProjectsOptions{})
 	//if err != nil {
-	//	fmt.Printf("Failed to get projects: %v\n", err)
-	//	return
+	//	log.Fatal("Gitlab projects error: ", err)
 	//}
-	//
 	//for _, project := range projects {
 	//	fmt.Printf(project.Name)
 	//}
 
-	var err error
 	file.Sess, err = session.NewSession(&aws.Config{
 		Endpoint: &config.S3.EndPoint,
 	})
