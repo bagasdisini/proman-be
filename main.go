@@ -21,6 +21,7 @@ import (
 	"proman-backend/internal/database"
 	_const "proman-backend/pkg/const"
 	"proman-backend/pkg/file"
+	git_api "proman-backend/pkg/git-api"
 	"proman-backend/pkg/log"
 	"proman-backend/pkg/util"
 	"proman-backend/version"
@@ -44,7 +45,18 @@ func main() {
 	log.SetLogger(e)
 
 	config.InitConfig(".env")
+	git_api.InitGitlab()
 	db := database.ConnectMongo()
+
+	//projects, _, err := git_api.Client.Projects.ListProjects(&gitlab.ListProjectsOptions{Owned: gitlab.Ptr(true)})
+	//if err != nil {
+	//	fmt.Printf("Failed to get projects: %v\n", err)
+	//	return
+	//}
+	//
+	//for _, project := range projects {
+	//	fmt.Printf(project.Name)
+	//}
 
 	var err error
 	file.Sess, err = session.NewSession(&aws.Config{
@@ -95,6 +107,7 @@ func main() {
 	docs.SwaggerInfo.Host = config.App.SwaggerHost
 
 	handler.NewAuthHandler(e, db)
+	handler.NewMeHandler(e, db)
 
 	log.Fatal(e.Start(fmt.Sprintf(`%v:%v`, config.App.Host, config.App.Port)))
 }

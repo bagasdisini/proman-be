@@ -14,4 +14,5 @@ func InitConfig(filepath string) {
 	initApp()
 	initAws()
 	initMongo()
+	initGitlab()
 }

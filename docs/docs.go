@@ -77,6 +77,31 @@ const docTemplate = `{
                 }
             }
         },
+        "/api/me": {
+            "get": {
+                "security": [
+                    {
+                        "ApiKeyAuth": []
+                    }
+                ],
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Me"
+                ],
+                "summary": "Get my info",
+                "operationId": "me",
+                "responses": {
+                    "200": {
+                        "description": "OK"
+                    }
+                }
+            }
+        },
         "/api/register": {
             "post": {
                 "consumes": [

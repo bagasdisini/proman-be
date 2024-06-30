@@ -68,6 +68,21 @@ paths:
       summary: Login
       tags:
       - Auth
+  /api/me:
+    get:
+      consumes:
+      - application/json
+      operationId: me
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+      security:
+      - ApiKeyAuth: []
+      summary: Get my info
+      tags:
+      - Me
   /api/register:
     post:
       consumes:

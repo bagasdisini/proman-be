@@ -23,7 +23,6 @@ type UserClaims struct {
 	jwt.StandardClaims
 	ID                 string             `json:"id"`
 	IDAsObjectID       primitive.ObjectID `json:"-"`
-	Email              string             `json:"email"`
 	Role               string             `json:"role"`
 	ExpiredDateInMilis int64              `json:"expiredDateInMilis"`
 }
@@ -158,7 +157,6 @@ func MakeToken(u *repository.User) (string, error) {
 	token := jwt.New(jwt.SigningMethodHS256)
 	claims := token.Claims.(jwt.MapClaims)
 	claims["id"] = u.ID.Hex()
-	claims["email"] = u.Email
 	claims["role"] = u.Role
 	claims["expiredDateInMilis"] = time.Now().AddDate(0, 0, config.JWT.Expire).Unix() * 1000
 
