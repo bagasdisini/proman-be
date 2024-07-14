@@ -15,6 +15,7 @@ var AWS struct {
 	SecretAccessKey string `mapstructure:"AWS_SECRET_ACCESS_KEY"`
 	AvatarDir       string `mapstructure:"AWS_S3_AVATAR_DIR"`
 	FileDir         string `mapstructure:"AWS_S3_FILE_DIR"`
+	ProjectLogoDir  string `mapstructure:"AWS_S3_PROJECT_LOGO_DIR"`
 }
 
 var Upload struct {
@@ -37,6 +38,7 @@ func initAws() {
 	AWS.SecretAccessKey = os.Getenv("AWS_SECRET_ACCESS_KEY")
 	AWS.AvatarDir = os.Getenv("AWS_S3_AVATAR_DIR")
 	AWS.FileDir = os.Getenv("AWS_S3_FILE_DIR")
+	AWS.ProjectLogoDir = os.Getenv("AWS_S3_PROJECT_LOGO_DIR")
 
 	if AWS.AccessKeyId == "" {
 		panic("AWS_ACCESS_KEY_ID is not set")
@@ -49,6 +51,9 @@ func initAws() {
 	}
 	if AWS.FileDir == "" {
 		panic("AWS_S3_FILE_DIR is not set")
+	}
+	if AWS.ProjectLogoDir == "" {
+		panic("AWS_S3_PROJECT_LOGO_DIR is not set")
 	}
 
 	fileMaxSize := os.Getenv("FILE_UPLOAD_MAX_SIZE")

@@ -49,7 +49,10 @@ func main() {
 	db := database.ConnectMongo()
 	var err error
 
-	//projects, _, err := git_api.Client.Projects.ListProjects(&gitlab.ListProjectsOptions{})
+	//projects, _, err := git_api.Client.Users.CreateUser(
+	//	&gitlab.CreateUserOptions{
+	//		Email:    gitlab.Ptr("fawifanifaw"),
+	//	})
 	//if err != nil {
 	//	log.Fatal("Gitlab projects error: ", err)
 	//}
@@ -106,6 +109,8 @@ func main() {
 
 	handler.NewAuthHandler(e, db)
 	handler.NewMeHandler(e, db)
+	handler.NewProjectHandler(e, db)
+	handler.NewTaskHandler(e, db)
 
 	log.Fatal(e.Start(fmt.Sprintf(`%v:%v`, config.App.Host, config.App.Port)))
 }

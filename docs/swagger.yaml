@@ -83,6 +83,36 @@ paths:
       summary: Get my info
       tags:
       - Me
+  /api/project/count:
+    get:
+      consumes:
+      - application/json
+      operationId: project-count
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+      security:
+      - ApiKeyAuth: []
+      summary: Get project count
+      tags:
+      - Project
+  /api/project/count/type:
+    get:
+      consumes:
+      - application/json
+      operationId: project-count-type
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+      security:
+      - ApiKeyAuth: []
+      summary: Get project count by type
+      tags:
+      - Project
   /api/register:
     post:
       consumes:
@@ -103,6 +133,36 @@ paths:
       summary: Register
       tags:
       - Auth
+  /api/task/count:
+    get:
+      consumes:
+      - application/json
+      operationId: task-count
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+      security:
+      - ApiKeyAuth: []
+      summary: Get task count
+      tags:
+      - Task
+  /api/user/count:
+    get:
+      consumes:
+      - application/json
+      operationId: user-count
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+      security:
+      - ApiKeyAuth: []
+      summary: Get user count
+      tags:
+      - User
 securityDefinitions:
   ApiKeyAuth:
     in: header
