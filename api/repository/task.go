@@ -288,3 +288,20 @@ func (r *TaskCollRepository) CountActiveUsers(userRepo *UserCollRepository) (*Co
 	countUser.Current.Total = countUser.Current.Active + countUser.Current.NotActive
 	return &countUser, nil
 }
+
+func (r *TaskCollRepository) DeleteOneByID(_id primitive.ObjectID) error {
+	filter := bson.M{
+		"_id": _id,
+	}
+	update := bson.M{
+		"$set": bson.M{
+			"is_deleted": true,
+		},
+	}
+
+	_, err := r.coll.UpdateOne(context.TODO(), filter, update)
+	if err != nil {
+		return err
+	}
+	return nil
+}
