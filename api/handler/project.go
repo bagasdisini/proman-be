@@ -7,6 +7,7 @@ import (
 	"net/http"
 	"proman-backend/api/repository"
 	"proman-backend/pkg/context"
+	"time"
 )
 
 type ProjectHandler struct {
@@ -36,14 +37,31 @@ func NewProjectHandler(e *echo.Echo, db *mongo.Database) *ProjectHandler {
 // @Success 200
 // @Security ApiKeyAuth
 func (h *ProjectHandler) projectCount(c echo.Context) error {
-	count, err := h.projectRepo.CountProject()
+	currentEnd := time.Now()
+	currentStart := currentEnd.AddDate(0, 0, -30)
+	current, err := h.projectRepo.CountProject(currentStart, currentEnd)
 	if err != nil {
 		if errors.Is(err, mongo.ErrNoDocuments) {
 			return echo.NewHTTPError(http.StatusBadRequest, "Project not found")
 		}
 		return err
 	}
-	return c.JSON(http.StatusOK, count)
+
+	prevEnd := currentStart.Add(-time.Second)
+	prevStart := prevEnd.AddDate(0, 0, -30)
+	previous, err := h.projectRepo.CountProject(prevStart, prevEnd)
+	if err != nil {
+		if errors.Is(err, mongo.ErrNoDocuments) {
+			return echo.NewHTTPError(http.StatusBadRequest, "Project not found")
+		}
+		return err
+	}
+
+	docs := repository.CountProject{
+		Current:   *current,
+		LastMonth: *previous,
+	}
+	return c.JSON(http.StatusOK, docs)
 }
 
 // Project Count By Type

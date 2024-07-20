@@ -9,6 +9,7 @@ var Gitlab struct {
 
 func initGitlab() {
 	Gitlab.Token = os.Getenv("GITLAB_ACCESS_TOKEN")
+	Gitlab.URL = os.Getenv("GITLAB_URL")
 
 	if Gitlab.Token == "" {
 		panic("GITLAB_ACCESS_TOKEN is required")

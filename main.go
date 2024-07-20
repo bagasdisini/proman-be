@@ -111,6 +111,7 @@ func main() {
 	handler.NewMeHandler(e, db)
 	handler.NewProjectHandler(e, db)
 	handler.NewTaskHandler(e, db)
+	handler.NewUserHandler(e, db)
 
 	log.Fatal(e.Start(fmt.Sprintf(`%v:%v`, config.App.Host, config.App.Port)))
 }

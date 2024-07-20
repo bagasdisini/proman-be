@@ -42,9 +42,9 @@ type CountTask struct {
 }
 
 type CountUserActive struct {
-	Total     int `json:"total"`
-	Active    int `json:"active"`
-	NotActive int `json:"not_active"`
+	Total       int `json:"total"`
+	HaveTask    int `json:"have_task"`
+	NotHaveTask int `json:"not_have_task"`
 }
 
 type CountUser struct {
@@ -182,10 +182,14 @@ func (r *TaskCollRepository) FindAllGroupByStatus() (*TaskGroup, error) {
 	return &taskGroup, nil
 }
 
-func (r *TaskCollRepository) CountTask() (*CountTask, error) {
-	var count CountTask
+func (r *TaskCollRepository) CountTask(start, end time.Time) (*CountTaskDetail, error) {
+	var count CountTaskDetail
 	match := bson.D{
-		{"$match", bson.D{{"is_deleted", bson.M{"$ne": true}}}},
+		{"$match", bson.D{
+			{"is_deleted", bson.M{"$ne": true}},
+			{"start_date", bson.M{"$gt": start}},
+			{"end_date", bson.M{"$lt": end}},
+		}},
 	}
 	group := bson.D{
 		{"$group", bson.D{
@@ -208,85 +212,53 @@ func (r *TaskCollRepository) CountTask() (*CountTask, error) {
 	return &count, nil
 }
 
-func (r *TaskCollRepository) CountActiveUsers(userRepo *UserCollRepository) (*CountUser, error) {
-	var countUser CountUser
+func (r *TaskCollRepository) CountUserThatHaveTask(userRepo *UserCollRepository, start, end time.Time) (*CountUserActive, error) {
+	result := &CountUserActive{}
 
 	taskPipeline := mongo.Pipeline{
 		{{"$match", bson.D{
-			{"is_deleted", false},
-			{"status", bson.D{{"$in", bson.A{"active", "testing"}}}},
+			{"status", bson.M{"$in": bson.A{"active", "testing"}}},
+			{"start_date", bson.M{"$gt": start}},
+			{"end_date", bson.M{"$lt": end}},
 		}}},
-		{{"$unwind", "$contributor"}},
 		{{"$group", bson.D{
 			{"_id", "$contributor"},
 		}}},
 	}
 
-	taskCursor, err := r.coll.Aggregate(context.TODO(), taskPipeline)
+	cursor, err := r.coll.Aggregate(context.TODO(), taskPipeline)
 	if err != nil {
 		return nil, err
 	}
-	defer func(taskCursor *mongo.Cursor, ctx context.Context) {
-		err := taskCursor.Close(ctx)
+	defer func(cursor *mongo.Cursor, ctx context.Context) {
+		err := cursor.Close(ctx)
 		if err != nil {
 			return
 		}
-	}(taskCursor, context.TODO())
+	}(cursor, context.TODO())
 
-	var contributorIDs []primitive.ObjectID
-	for taskCursor.Next(context.TODO()) {
+	var contributorsWithTasks []primitive.ObjectID
+	for cursor.Next(context.TODO()) {
 		var result struct {
-			ID primitive.ObjectID `bson:"_id"`
+			ID []primitive.ObjectID `bson:"_id"`
 		}
-		if err := taskCursor.Decode(&result); err != nil {
+		if err := cursor.Decode(&result); err != nil {
 			return nil, err
 		}
-		contributorIDs = append(contributorIDs, result.ID)
+		contributorsWithTasks = append(contributorsWithTasks, result.ID...)
 	}
 
-	if len(contributorIDs) == 0 {
-		return &countUser, nil
-	}
-
-	userPipeline := mongo.Pipeline{
-		{{"$match", bson.D{
-			{"_id", bson.D{{"$in", contributorIDs}}},
-			{"is_deleted", false},
-		}}},
-		{{"$group", bson.D{
-			{"_id", "$status"},
-			{"count", bson.D{{"$sum", 1}}},
-		}}},
-	}
-
-	userCursor, err := userRepo.coll.Aggregate(context.TODO(), userPipeline)
+	totalUsersCount, err := userRepo.coll.CountDocuments(context.TODO(), bson.M{"is_deleted": bson.M{"$ne": true}})
 	if err != nil {
 		return nil, err
 	}
-	defer func(userCursor *mongo.Cursor, ctx context.Context) {
-		err := userCursor.Close(ctx)
-		if err != nil {
-			return
-		}
-	}(userCursor, context.TODO())
 
-	for userCursor.Next(context.TODO()) {
-		var result struct {
-			ID    string `bson:"_id"`
-			Count int    `bson:"count"`
-		}
-		if err := userCursor.Decode(&result); err != nil {
-			return nil, err
-		}
-		switch result.ID {
-		case "active":
-			countUser.Current.Active = result.Count
-		case "not_active":
-			countUser.Current.NotActive = result.Count
-		}
-	}
-	countUser.Current.Total = countUser.Current.Active + countUser.Current.NotActive
-	return &countUser, nil
+	haveTaskCount := len(contributorsWithTasks)
+	notHaveTaskCount := totalUsersCount - int64(haveTaskCount)
+	result.Total = int(totalUsersCount)
+	result.HaveTask = haveTaskCount
+	result.NotHaveTask = int(notHaveTaskCount)
+	return result, nil
 }
 
 func (r *TaskCollRepository) DeleteOneByID(_id primitive.ObjectID) error {

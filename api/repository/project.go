@@ -105,10 +105,14 @@ func (r *ProjectCollRepository) FindAllByContributorID(_id primitive.ObjectID) (
 	return &projects, nil
 }
 
-func (r *ProjectCollRepository) CountProject() (*CountProject, error) {
-	var count CountProject
+func (r *ProjectCollRepository) CountProject(start, end time.Time) (*CountProjectDetail, error) {
+	var count CountProjectDetail
 	match := bson.D{
-		{"$match", bson.D{{"is_deleted", bson.M{"$ne": true}}}},
+		{"$match", bson.D{
+			{"is_deleted", bson.M{"$ne": true}},
+			{"start_date", bson.M{"$gt": start}},
+			{"end_date", bson.M{"$lt": end}},
+		}},
 	}
 	group := bson.D{
 		{"$group", bson.D{

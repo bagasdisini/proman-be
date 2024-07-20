@@ -7,6 +7,7 @@ import (
 	"net/http"
 	"proman-backend/api/repository"
 	"proman-backend/pkg/context"
+	"time"
 )
 
 type TaskHandler struct {
@@ -35,12 +36,29 @@ func NewTaskHandler(e *echo.Echo, db *mongo.Database) *TaskHandler {
 // @Success 200
 // @Security ApiKeyAuth
 func (h *TaskHandler) taskCount(c echo.Context) error {
-	count, err := h.taskRepo.CountTask()
+	currentEnd := time.Now()
+	currentStart := currentEnd.AddDate(0, 0, -30)
+	current, err := h.taskRepo.CountTask(currentStart, currentEnd)
 	if err != nil {
 		if errors.Is(err, mongo.ErrNoDocuments) {
 			return echo.NewHTTPError(http.StatusBadRequest, "Task not found")
 		}
 		return err
 	}
-	return c.JSON(http.StatusOK, count)
+
+	prevEnd := currentStart.Add(-time.Second)
+	prevStart := prevEnd.AddDate(0, 0, -30)
+	previous, err := h.taskRepo.CountTask(prevStart, prevEnd)
+	if err != nil {
+		if errors.Is(err, mongo.ErrNoDocuments) {
+			return echo.NewHTTPError(http.StatusBadRequest, "Task not found")
+		}
+		return err
+	}
+
+	docs := repository.CountTask{
+		Current:   *current,
+		LastMonth: *previous,
+	}
+	return c.JSON(http.StatusOK, docs)
 }
