@@ -3,12 +3,57 @@ package handler
 import (
 	"errors"
 	"github.com/labstack/echo/v4"
+	"go.mongodb.org/mongo-driver/bson/primitive"
 	"go.mongodb.org/mongo-driver/mongo"
 	"net/http"
 	"proman-backend/api/repository"
 	"proman-backend/pkg/context"
+	"strings"
 	"time"
 )
+
+type projectForm struct {
+	Name        string `json:"name" form:"name"`
+	Description string `json:"description" form:"description"`
+	StartDate   int64  `json:"start_date" form:"start_date"`
+	EndDate     int64  `json:"end_date" form:"end_date"`
+	Contributor string `json:"contributor" form:"contributor"`
+	Type        string `json:"type" form:"type"`
+	Logo        string `json:"logo" bson:"logo"`
+	Attachments string `json:"attachments" bson:"attachments"`
+}
+
+func newProjectForm(c echo.Context) (*projectForm, error) {
+	form := projectForm{}
+	if err := c.Bind(&form); err != nil {
+		return nil, echo.NewHTTPError(http.StatusBadRequest, "Invalid data format.")
+	}
+
+	form.Name = strings.TrimSpace(form.Name)
+	form.Description = strings.TrimSpace(form.Description)
+	form.Contributor = strings.TrimSpace(form.Contributor)
+	form.Type = strings.TrimSpace(form.Type)
+
+	if form.Name == "" {
+		return nil, echo.NewHTTPError(http.StatusBadRequest, "Name cannot be empty.")
+	}
+	if form.Description == "" {
+		return nil, echo.NewHTTPError(http.StatusBadRequest, "Description cannot be empty.")
+	}
+	if form.Contributor == "" {
+		return nil, echo.NewHTTPError(http.StatusBadRequest, "Contributor cannot be empty.")
+	}
+	if form.Type == "" {
+		return nil, echo.NewHTTPError(http.StatusBadRequest, "Type cannot be empty.")
+	}
+	if form.StartDate <= 0 {
+		return nil, echo.NewHTTPError(http.StatusBadRequest, "Invalid start date.")
+	}
+	if form.EndDate <= 0 {
+		return nil, echo.NewHTTPError(http.StatusBadRequest, "Invalid end date.")
+	}
+	return &form, nil
+}
 
 type ProjectHandler struct {
 	projectRepo *repository.ProjectCollRepository
@@ -23,6 +68,8 @@ func NewProjectHandler(e *echo.Echo, db *mongo.Database) *ProjectHandler {
 
 	project.GET("/project/count", h.projectCount)
 	project.GET("/project/count/type", h.projectCountByType)
+
+	project.POST("/project", h.createProject)
 
 	return h
 }
@@ -82,4 +129,64 @@ func (h *ProjectHandler) projectCountByType(c echo.Context) error {
 		return err
 	}
 	return c.JSON(http.StatusOK, count)
+}
+
+// Create Project
+// @Tags Project
+// @Summary Create project
+// @ID create-project
+// @Router /api/project [post]
+// @Accept json
+// @Produce  json
+// @Param name formData string true "Project name"
+// @Param description formData string true "Project description"
+// @Param start_date formData int true "Project start date"
+// @Param end_date formData int true "Project end date"
+// @Param contributor formData string true "Project contributor"
+// @Success 200
+// @Security ApiKeyAuth
+func (h *ProjectHandler) createProject(c echo.Context) error {
+	form, err := newProjectForm(c)
+	if err != nil {
+		return err
+	}
+
+	tokenData := c.Get("me").(*context.UserClaims)
+
+	ownerIncluded := false
+	contributorsOId := make([]primitive.ObjectID, 0)
+	for _, user := range strings.Split(form.Contributor, ",") {
+		userOId, err := primitive.ObjectIDFromHex(user)
+		if err != nil {
+			return echo.NewHTTPError(http.StatusBadRequest, "Invalid contributor.")
+		}
+		if userOId == tokenData.IDAsObjectID {
+			ownerIncluded = true
+		}
+		contributorsOId = append(contributorsOId, userOId)
+	}
+	if !ownerIncluded {
+		contributorsOId = append(contributorsOId, tokenData.IDAsObjectID)
+	}
+
+	project := repository.Project{
+		ID:          primitive.NewObjectID(),
+		Name:        form.Name,
+		Description: form.Description,
+		Type:        form.Type,
+		StartDate:   time.Unix(form.StartDate, 0),
+		EndDate:     time.Unix(form.EndDate, 0),
+		Contributor: contributorsOId,
+		Attachments: nil,
+		Status:      "",
+		Logo:        "",
+		CreatedAt:   time.Now(),
+		IsDeleted:   false,
+	}
+
+	doc, err := h.projectRepo.InsertOne(&project)
+	if err != nil {
+		return echo.NewHTTPError(http.StatusBadRequest, "Failed to create project.")
+	}
+	return c.JSON(http.StatusOK, doc)
 }

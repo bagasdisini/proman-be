@@ -1,5 +1,5 @@
 # Step #1
-FROM golang:1.22 as firststage
+FROM golang:1.22 AS firststage
 LABEL description="Proman Backend"
 LABEL maintainer="Muhammad Bagas Sudibyo <mbagas221@gmail.com>"
 WORKDIR /build/
