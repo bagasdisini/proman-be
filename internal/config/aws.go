@@ -7,6 +7,7 @@ import (
 
 var S3 struct {
 	EndPoint string `mapstructure:"AWS_S3_ENDPOINT"`
+	Region   string `mapstructure:"AWS_S3_REGION"`
 	Bucket   string `mapstructure:"AWS_S3_BUCKET"`
 }
 
@@ -25,10 +26,14 @@ var Upload struct {
 
 func initAws() {
 	S3.EndPoint = os.Getenv("AWS_S3_ENDPOINT")
+	S3.Region = os.Getenv("AWS_S3_REGION")
 	S3.Bucket = os.Getenv("AWS_S3_BUCKET")
 
 	if S3.EndPoint == "" {
 		panic("AWS_S3_ENDPOINT is not set")
+	}
+	if S3.Region == "" {
+		panic("AWS_S3_REGION is not set")
 	}
 	if S3.Bucket == "" {
 		panic("AWS_S3_BUCKET is not set")

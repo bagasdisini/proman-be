@@ -83,6 +83,60 @@ paths:
       summary: Get my info
       tags:
       - Me
+  /api/project:
+    post:
+      consumes:
+      - application/json
+      operationId: create-project
+      parameters:
+      - description: Project name
+        in: formData
+        name: name
+        required: true
+        type: string
+      - description: Project description
+        in: formData
+        name: description
+        required: true
+        type: string
+      - description: Project start date
+        in: formData
+        name: start_date
+        required: true
+        type: integer
+      - description: Project end date
+        in: formData
+        name: end_date
+        required: true
+        type: integer
+      - description: Project contributor
+        in: formData
+        name: contributor
+        required: true
+        type: string
+      - description: Project type
+        in: formData
+        name: type
+        required: true
+        type: string
+      - description: Project logo
+        in: formData
+        name: logo
+        type: file
+      - description: Project attachments
+        in: formData
+        name: attachments
+        type: file
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+      security:
+      - ApiKeyAuth: []
+      summary: Create project
+      tags:
+      - Project
   /api/project/count:
     get:
       consumes:

@@ -62,6 +62,7 @@ func main() {
 
 	file.Sess, err = session.NewSession(&aws.Config{
 		Endpoint: &config.S3.EndPoint,
+		Region:   &config.S3.Region,
 	})
 	if err != nil {
 		log.Fatal("Amazon S3 session error: ", err)

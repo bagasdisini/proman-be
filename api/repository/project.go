@@ -32,17 +32,31 @@ func (u *Project) MarshalJSON() ([]byte, error) {
 	if u.Logo != "" {
 		url = "https://" + config.S3.Bucket
 		if !strings.Contains(config.S3.EndPoint, "https://") {
-			url = url + "." + config.S3.EndPoint + "/" + config.AWS.ProjectLogoDir + "/" + u.Logo
+			url = url + "." + config.S3.EndPoint + "/" + u.Logo
 		} else {
-			url = url + "." + config.S3.EndPoint[8:] + "/" + config.AWS.ProjectLogoDir + "/" + u.Logo
+			url = url + "." + config.S3.EndPoint[8:] + "/" + u.Logo
+		}
+	}
+	var attachments []string
+	if u.Attachments != nil {
+		for _, attachment := range u.Attachments {
+			urls := "https://" + config.S3.Bucket
+			if !strings.Contains(config.S3.EndPoint, "https://") {
+				urls = urls + "." + config.S3.EndPoint + "/" + attachment
+			} else {
+				urls = urls + "." + config.S3.EndPoint[8:] + "/" + attachment
+			}
+			attachments = append(attachments, urls)
 		}
 	}
 	return json.Marshal(&struct {
 		*Alias
-		Logo string `json:"logo" bson:"logo"`
+		Attachments []string `json:"attachments" bson:"attachments"`
+		Logo        string   `json:"logo" bson:"logo"`
 	}{
-		Alias: (*Alias)(u),
-		Logo:  url,
+		Alias:       (*Alias)(u),
+		Attachments: attachments,
+		Logo:        url,
 	})
 }
 

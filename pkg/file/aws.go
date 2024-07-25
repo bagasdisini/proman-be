@@ -31,14 +31,14 @@ type InputFilePack struct {
 	FilePack *FilePack
 }
 
-func NewInputFilePack(filename string, filepack *FilePack) *InputFilePack {
+func newInputFilePack(filename string, filepack *FilePack) *InputFilePack {
 	return &InputFilePack{
 		FileName: filename,
 		FilePack: filepack,
 	}
 }
 
-func NewFilePack(f *os.File, contentType string) (*FilePack, error) {
+func newFilePack(f *os.File, contentType string) (*FilePack, error) {
 	ff, err := os.Open(f.Name())
 	if err != nil {
 		return nil, err
@@ -62,11 +62,12 @@ func NewFilePack(f *os.File, contentType string) (*FilePack, error) {
 	}, nil
 }
 
-func Upload(dir string, inputFilePacks *InputFilePack) (string, error) {
+func upload(dir string, inputFilePacks *InputFilePack) (string, error) {
 	locations := []string{}
 
 	f, err := os.Open(inputFilePacks.FilePack.Name)
 	if err != nil {
+		fmt.Println(err)
 		return "", err
 	}
 	defer func(f *os.File) {
@@ -76,7 +77,7 @@ func Upload(dir string, inputFilePacks *InputFilePack) (string, error) {
 		}
 	}(f)
 
-	fileDestination := inputFilePacks.FileName
+	fileDestination := inputFilePacks.FilePack.BaseName
 	if len(dir) > 0 {
 		fileDestination = dir + "/" + fileDestination
 	}
@@ -91,7 +92,7 @@ func Upload(dir string, inputFilePacks *InputFilePack) (string, error) {
 		Body:        f,
 	})
 	if err != nil {
-		log.Error("Failed to upload media to amazon s3 server")
+		log.Errorf("Failed to upload media to amazon s3 server, %v", err)
 		return "", err
 	}
 

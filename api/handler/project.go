@@ -7,7 +7,9 @@ import (
 	"go.mongodb.org/mongo-driver/mongo"
 	"net/http"
 	"proman-backend/api/repository"
+	"proman-backend/internal/config"
 	"proman-backend/pkg/context"
+	"proman-backend/pkg/file"
 	"strings"
 	"time"
 )
@@ -143,6 +145,9 @@ func (h *ProjectHandler) projectCountByType(c echo.Context) error {
 // @Param start_date formData int true "Project start date"
 // @Param end_date formData int true "Project end date"
 // @Param contributor formData string true "Project contributor"
+// @Param type formData string true "Project type"
+// @Param logo formData file false "Project logo"
+// @Param attachments formData file false "Project attachments"
 // @Success 200
 // @Security ApiKeyAuth
 func (h *ProjectHandler) createProject(c echo.Context) error {
@@ -169,6 +174,15 @@ func (h *ProjectHandler) createProject(c echo.Context) error {
 		contributorsOId = append(contributorsOId, tokenData.IDAsObjectID)
 	}
 
+	logo, err := file.GetFileThenUpload(c, "logo", config.AWS.ProjectLogoDir)
+	if err != nil && !errors.Is(err, http.ErrMissingFile) {
+		return err
+	}
+	attachments, err := file.GetFilesThenUpload(c, "attachments", config.AWS.FileDir)
+	if err != nil && !errors.Is(err, http.ErrMissingFile) {
+		return err
+	}
+
 	project := repository.Project{
 		ID:          primitive.NewObjectID(),
 		Name:        form.Name,
@@ -177,9 +191,9 @@ func (h *ProjectHandler) createProject(c echo.Context) error {
 		StartDate:   time.Unix(form.StartDate, 0),
 		EndDate:     time.Unix(form.EndDate, 0),
 		Contributor: contributorsOId,
-		Attachments: nil,
-		Status:      "",
-		Logo:        "",
+		Status:      "active",
+		Attachments: attachments,
+		Logo:        logo,
 		CreatedAt:   time.Now(),
 		IsDeleted:   false,
 	}
