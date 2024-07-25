@@ -87,6 +87,21 @@ func NewProjectRepository(db *mongo.Database) *ProjectCollRepository {
 	}
 }
 
+func (r *ProjectCollRepository) FindAll() (*[]Project, error) {
+	var projects []Project
+	filter := bson.M{"is_deleted": bson.M{"$ne": true}}
+
+	cursor, err := r.coll.Find(context.Background(), filter)
+	if err != nil {
+		return nil, err
+	}
+
+	if err = cursor.All(context.Background(), &projects); err != nil {
+		return nil, err
+	}
+	return &projects, nil
+}
+
 func (r *ProjectCollRepository) FindOneByID(_id primitive.ObjectID) (*Project, error) {
 	var user *Project
 	filter := bson.M{

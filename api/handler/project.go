@@ -68,12 +68,65 @@ func NewProjectHandler(e *echo.Echo, db *mongo.Database) *ProjectHandler {
 
 	project := e.Group("/api", context.ContextHandler)
 
-	project.GET("/project/count", h.projectCount)
-	project.GET("/project/count/type", h.projectCountByType)
+	project.GET("/project", h.list)
+	project.GET("/project/:id", h.detail)
 
-	project.POST("/project", h.createProject)
+	project.GET("/project/count", h.count)
+	project.GET("/project/count/type", h.countByType)
+
+	project.GET("/project/user/:id", h.listByUser)
+
+	project.POST("/project", h.create)
 
 	return h
+}
+
+// List Project
+// @Tags Project
+// @Summary Get list of project
+// @ID list-project
+// @Router /api/project [get]
+// @Accept json
+// @Produce  json
+// @Success 200
+// @Security ApiKeyAuth
+func (h *ProjectHandler) list(c echo.Context) error {
+	projects, err := h.projectRepo.FindAll()
+	if err != nil {
+		if errors.Is(err, mongo.ErrNoDocuments) {
+			return echo.NewHTTPError(http.StatusBadRequest, "Project not found")
+		}
+		return err
+	}
+	return c.JSON(http.StatusOK, projects)
+}
+
+// Get Project
+// @Tags Project
+// @Summary Get project by id
+// @ID get-project
+// @Router /api/project/{id} [get]
+// @Accept json
+// @Produce  json
+// @Param id path string true "Project ID"
+// @Success 200
+// @Security ApiKeyAuth
+func (h *ProjectHandler) detail(c echo.Context) error {
+	id := c.Param("id")
+
+	OId, err := primitive.ObjectIDFromHex(id)
+	if err != nil {
+		return echo.NewHTTPError(http.StatusBadRequest, "Invalid project ID.")
+	}
+
+	project, err := h.projectRepo.FindOneByID(OId)
+	if err != nil {
+		if errors.Is(err, mongo.ErrNoDocuments) {
+			return echo.NewHTTPError(http.StatusBadRequest, "Project not found")
+		}
+		return err
+	}
+	return c.JSON(http.StatusOK, project)
 }
 
 // Project Count
@@ -85,7 +138,7 @@ func NewProjectHandler(e *echo.Echo, db *mongo.Database) *ProjectHandler {
 // @Produce  json
 // @Success 200
 // @Security ApiKeyAuth
-func (h *ProjectHandler) projectCount(c echo.Context) error {
+func (h *ProjectHandler) count(c echo.Context) error {
 	currentEnd := time.Now()
 	currentStart := currentEnd.AddDate(0, 0, -30)
 	current, err := h.projectRepo.CountProject(currentStart, currentEnd)
@@ -122,7 +175,7 @@ func (h *ProjectHandler) projectCount(c echo.Context) error {
 // @Produce  json
 // @Success 200
 // @Security ApiKeyAuth
-func (h *ProjectHandler) projectCountByType(c echo.Context) error {
+func (h *ProjectHandler) countByType(c echo.Context) error {
 	count, err := h.projectRepo.CountTypeProject()
 	if err != nil {
 		if errors.Is(err, mongo.ErrNoDocuments) {
@@ -131,6 +184,34 @@ func (h *ProjectHandler) projectCountByType(c echo.Context) error {
 		return err
 	}
 	return c.JSON(http.StatusOK, count)
+}
+
+// List Project By User
+// @Tags Project
+// @Summary Get list of project by user
+// @ID list-project-user
+// @Router /api/project/user/{id} [get]
+// @Accept json
+// @Produce  json
+// @Param id path string true "User ID"
+// @Success 200
+// @Security ApiKeyAuth
+func (h *ProjectHandler) listByUser(c echo.Context) error {
+	id := c.Param("id")
+
+	OId, err := primitive.ObjectIDFromHex(id)
+	if err != nil {
+		return echo.NewHTTPError(http.StatusBadRequest, "Invalid user ID.")
+	}
+
+	projects, err := h.projectRepo.FindAllByContributorID(OId)
+	if err != nil {
+		if errors.Is(err, mongo.ErrNoDocuments) {
+			return echo.NewHTTPError(http.StatusBadRequest, "Project not found")
+		}
+		return err
+	}
+	return c.JSON(http.StatusOK, projects)
 }
 
 // Create Project
@@ -150,7 +231,7 @@ func (h *ProjectHandler) projectCountByType(c echo.Context) error {
 // @Param attachments formData file false "Project attachments"
 // @Success 200
 // @Security ApiKeyAuth
-func (h *ProjectHandler) createProject(c echo.Context) error {
+func (h *ProjectHandler) create(c echo.Context) error {
 	form, err := newProjectForm(c)
 	if err != nil {
 		return err
