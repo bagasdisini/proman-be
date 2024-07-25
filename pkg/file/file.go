@@ -20,6 +20,7 @@ func getFile(c echo.Context, formName string) (*FilePack, error) {
 	}
 
 	headerContentType := file.Header.Get(echo.HeaderContentType)
+	headerContentTypes := strings.Split(headerContentType, "/")
 
 	if file.Size > 2_097_152*20 { // 20MB
 		return nil, echo.NewHTTPError(http.StatusBadRequest, "Maximum file size is 2MB")
@@ -36,7 +37,7 @@ func getFile(c echo.Context, formName string) (*FilePack, error) {
 		}
 	}(src)
 
-	filename := fmt.Sprintf("%v-%v-*.%v", time.Now().UnixNano(), random.String(10), strings.TrimPrefix(headerContentType, "image/"))
+	filename := fmt.Sprintf("%v-%v-*.%v", time.Now().UnixNano(), random.String(10), headerContentTypes[len(headerContentTypes)-1])
 	dst, err := os.CreateTemp(os.TempDir(), filename)
 	if err != nil {
 		return nil, err
@@ -88,6 +89,7 @@ func getFiles(c echo.Context, formName string) ([]*FilePack, error) {
 
 	for _, file := range files {
 		headerContentType := file.Header.Get(echo.HeaderContentType)
+		headerContentTypes := strings.Split(headerContentType, "/")
 
 		if file.Size > 2_097_152*20 { // 20MB
 			return nil, echo.NewHTTPError(http.StatusBadRequest, "Maximum file size is 2MB")
@@ -104,7 +106,7 @@ func getFiles(c echo.Context, formName string) ([]*FilePack, error) {
 			}
 		}(src)
 
-		filename := fmt.Sprintf("*-%v-%v.%v", random.String(10), time.Now().UnixNano(), strings.TrimPrefix(headerContentType, "image/"))
+		filename := fmt.Sprintf("%v-%v-*.%v", time.Now().UnixNano(), random.String(10), headerContentTypes[len(headerContentTypes)-1])
 		dst, err := os.CreateTemp(os.TempDir(), filename)
 		if err != nil {
 			return nil, err
