@@ -8,6 +8,7 @@ import (
 	"net/http"
 	"proman-backend/api/repository"
 	"proman-backend/internal/config"
+	_const "proman-backend/pkg/const"
 	"proman-backend/pkg/context"
 	"proman-backend/pkg/file"
 	"strings"
@@ -272,7 +273,7 @@ func (h *ProjectHandler) create(c echo.Context) error {
 		StartDate:   time.Unix(form.StartDate, 0),
 		EndDate:     time.Unix(form.EndDate, 0),
 		Contributor: contributorsOId,
-		Status:      "active",
+		Status:      _const.ProjectActive,
 		Attachments: attachments,
 		Logo:        logo,
 		CreatedAt:   time.Now(),

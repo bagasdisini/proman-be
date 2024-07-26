@@ -5,6 +5,7 @@ import (
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
 	"go.mongodb.org/mongo-driver/mongo"
+	_const "proman-backend/pkg/const"
 	"time"
 )
 
@@ -195,10 +196,10 @@ func (r *TaskCollRepository) CountTask(start, end time.Time) (*CountTaskDetail, 
 		{"$group", bson.D{
 			{"_id", nil},
 			{"total", bson.D{{"$sum", 1}}},
-			{"active", bson.D{{"$sum", bson.D{{"$cond", bson.A{bson.D{{"$eq", bson.A{"$status", "active"}}}, 1, 0}}}}}},
-			{"testing", bson.D{{"$sum", bson.D{{"$cond", bson.A{bson.D{{"$eq", bson.A{"$status", "testing"}}}, 1, 0}}}}}},
-			{"completed", bson.D{{"$sum", bson.D{{"$cond", bson.A{bson.D{{"$eq", bson.A{"$status", "completed"}}}, 1, 0}}}}}},
-			{"cancelled", bson.D{{"$sum", bson.D{{"$cond", bson.A{bson.D{{"$eq", bson.A{"$status", "cancelled"}}}, 1, 0}}}}}},
+			{_const.TaskActive, bson.D{{"$sum", bson.D{{"$cond", bson.A{bson.D{{"$eq", bson.A{"$status", _const.TaskActive}}}, 1, 0}}}}}},
+			{_const.TaskTesting, bson.D{{"$sum", bson.D{{"$cond", bson.A{bson.D{{"$eq", bson.A{"$status", _const.TaskTesting}}}, 1, 0}}}}}},
+			{_const.TaskCompleted, bson.D{{"$sum", bson.D{{"$cond", bson.A{bson.D{{"$eq", bson.A{"$status", _const.TaskCompleted}}}, 1, 0}}}}}},
+			{_const.TaskCancelled, bson.D{{"$sum", bson.D{{"$cond", bson.A{bson.D{{"$eq", bson.A{"$status", _const.TaskCancelled}}}, 1, 0}}}}}},
 		}},
 	}
 
@@ -217,7 +218,7 @@ func (r *TaskCollRepository) CountUserThatHaveTask(userRepo *UserCollRepository,
 
 	taskPipeline := mongo.Pipeline{
 		{{"$match", bson.D{
-			{"status", bson.M{"$in": bson.A{"active", "testing"}}},
+			{"status", bson.M{"$in": bson.A{_const.TaskActive, _const.TaskTesting}}},
 			{"start_date", bson.M{"$gt": start}},
 			{"end_date", bson.M{"$lt": end}},
 		}}},

@@ -7,6 +7,7 @@ import (
 	"go.mongodb.org/mongo-driver/bson/primitive"
 	"go.mongodb.org/mongo-driver/mongo"
 	"proman-backend/internal/config"
+	_const "proman-backend/pkg/const"
 	"strings"
 	"time"
 )
@@ -20,7 +21,7 @@ type Project struct {
 	EndDate     time.Time            `json:"end_date" bson:"end_date"`
 	Contributor []primitive.ObjectID `json:"contributor" bson:"contributor"`
 	Attachments []string             `json:"attachments" bson:"attachments"`
-	Status      string               `json:"status" bson:"status"` // active, completed, pending
+	Status      string               `json:"status" bson:"status"` // active, completed, pending, cancelled
 	Logo        string               `json:"logo" bson:"logo"`
 	CreatedAt   time.Time            `json:"created_at" bson:"created_at"`
 	IsDeleted   bool                 `json:"-" bson:"is_deleted"`
@@ -147,9 +148,10 @@ func (r *ProjectCollRepository) CountProject(start, end time.Time) (*CountProjec
 		{"$group", bson.D{
 			{"_id", nil},
 			{"total", bson.D{{"$sum", 1}}},
-			{"active", bson.D{{"$sum", bson.D{{"$cond", bson.A{bson.D{{"$eq", bson.A{"$status", "active"}}}, 1, 0}}}}}},
-			{"completed", bson.D{{"$sum", bson.D{{"$cond", bson.A{bson.D{{"$eq", bson.A{"$status", "completed"}}}, 1, 0}}}}}},
-			{"pending", bson.D{{"$sum", bson.D{{"$cond", bson.A{bson.D{{"$eq", bson.A{"$status", "pending"}}}, 1, 0}}}}}},
+			{_const.ProjectActive, bson.D{{"$sum", bson.D{{"$cond", bson.A{bson.D{{"$eq", bson.A{"$status", _const.ProjectActive}}}, 1, 0}}}}}},
+			{_const.ProjectCompleted, bson.D{{"$sum", bson.D{{"$cond", bson.A{bson.D{{"$eq", bson.A{"$status", _const.ProjectCompleted}}}, 1, 0}}}}}},
+			{_const.ProjectPending, bson.D{{"$sum", bson.D{{"$cond", bson.A{bson.D{{"$eq", bson.A{"$status", _const.ProjectPending}}}, 1, 0}}}}}},
+			{_const.ProjectCancelled, bson.D{{"$sum", bson.D{{"$cond", bson.A{bson.D{{"$eq", bson.A{"$status", _const.ProjectCancelled}}}, 1, 0}}}}}},
 		}},
 	}
 
