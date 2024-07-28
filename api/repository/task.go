@@ -183,6 +183,14 @@ func (r *TaskCollRepository) FindAllGroupByStatus() (*TaskGroup, error) {
 	return &taskGroup, nil
 }
 
+func (r *TaskCollRepository) CreateOne(task *Task) error {
+	_, err := r.coll.InsertOne(context.TODO(), task)
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
 func (r *TaskCollRepository) CountTask(start, end time.Time) (*CountTaskDetail, error) {
 	var count CountTaskDetail
 	match := bson.D{
@@ -273,6 +281,23 @@ func (r *TaskCollRepository) DeleteOneByID(_id primitive.ObjectID) error {
 	}
 
 	_, err := r.coll.UpdateOne(context.TODO(), filter, update)
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
+func (r *TaskCollRepository) DeleteAllByProjectID(projectID primitive.ObjectID) error {
+	filter := bson.M{
+		"project_id": projectID,
+	}
+	update := bson.M{
+		"$set": bson.M{
+			"is_deleted": true,
+		},
+	}
+
+	_, err := r.coll.UpdateMany(context.TODO(), filter, update)
 	if err != nil {
 		return err
 	}

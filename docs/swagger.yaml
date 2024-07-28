@@ -23,6 +23,36 @@ definitions:
       password:
         type: string
     type: object
+  handler.scheduleForm:
+    properties:
+      contributor:
+        type: string
+      description:
+        type: string
+      end_date:
+        type: integer
+      name:
+        type: string
+      start_date:
+        type: integer
+      type:
+        type: string
+    type: object
+  handler.taskForm:
+    properties:
+      contributor:
+        type: string
+      description:
+        type: string
+      end_date:
+        type: integer
+      name:
+        type: string
+      project_id:
+        type: string
+      start_date:
+        type: integer
+    type: object
 info:
   contact: {}
   description: Proman Backend API
@@ -243,6 +273,71 @@ paths:
       summary: Register
       tags:
       - Auth
+  /api/schedule:
+    post:
+      consumes:
+      - application/json
+      operationId: schedule-create
+      parameters:
+      - description: Schedule data
+        in: body
+        name: body
+        required: true
+        schema:
+          $ref: '#/definitions/handler.scheduleForm'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+      security:
+      - ApiKeyAuth: []
+      summary: Create schedule
+      tags:
+      - Schedule
+  /api/task:
+    post:
+      consumes:
+      - application/json
+      operationId: task-create
+      parameters:
+      - description: Task data
+        in: body
+        name: body
+        required: true
+        schema:
+          $ref: '#/definitions/handler.taskForm'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+      security:
+      - ApiKeyAuth: []
+      summary: Create task
+      tags:
+      - Task
+  /api/task/{id}:
+    delete:
+      consumes:
+      - application/json
+      operationId: task-delete
+      parameters:
+      - description: Task ID
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+      security:
+      - ApiKeyAuth: []
+      summary: Delete task
+      tags:
+      - Task
   /api/task/count:
     get:
       consumes:

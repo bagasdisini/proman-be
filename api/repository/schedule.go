@@ -48,3 +48,11 @@ func (r *ScheduleCollRepository) FindAllByDateRange(startDate, endDate time.Time
 	}
 	return schedules, nil
 }
+
+func (r *ScheduleCollRepository) CreateOne(schedule *Schedule) error {
+	_, err := r.coll.InsertOne(context.TODO(), schedule)
+	if err != nil {
+		return err
+	}
+	return nil
+}
