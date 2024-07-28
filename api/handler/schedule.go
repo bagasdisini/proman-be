@@ -74,7 +74,7 @@ func NewScheduleHandler(e *echo.Echo, db *mongo.Database) *ScheduleHandler {
 // @ID schedule-create
 // @Router /api/schedule [post]
 // @Accept json
-// @Produce  json
+// @Produce json
 // @Param body body scheduleForm true "Schedule data"
 // @Success 200
 // @Security ApiKeyAuth

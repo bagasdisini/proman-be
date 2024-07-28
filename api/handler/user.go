@@ -36,7 +36,7 @@ func NewUserHandler(e *echo.Echo, db *mongo.Database) *UserHandler {
 // @ID user-count
 // @Router /api/user/count [get]
 // @Accept json
-// @Produce  json
+// @Produce json
 // @Success 200
 // @Security ApiKeyAuth
 func (h *UserHandler) userCount(c echo.Context) error {
@@ -75,8 +75,8 @@ func (h *UserHandler) userCount(c echo.Context) error {
 // @Param sort query string false "Sort" default("desc") Enums(desc,asc)
 // @Router /api/user/latest [get]
 // @Accept json
-// @Produce  json
-// @Success 200
+// @Produce json
+//@Success 200
 // @Security ApiKeyAuth
 func (h *UserHandler) userList(c echo.Context) error {
 	_, err := util.NewCommonQuery(c)

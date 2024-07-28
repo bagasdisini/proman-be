@@ -81,7 +81,7 @@ func NewTaskHandler(e *echo.Echo, db *mongo.Database) *TaskHandler {
 // @ID task-count
 // @Router /api/task/count [get]
 // @Accept json
-// @Produce  json
+// @Produce json
 // @Success 200
 // @Security ApiKeyAuth
 func (h *TaskHandler) taskCount(c echo.Context) error {
@@ -118,7 +118,7 @@ func (h *TaskHandler) taskCount(c echo.Context) error {
 // @ID task-create
 // @Router /api/task [post]
 // @Accept json
-// @Produce  json
+// @Produce json
 // @Param body body taskForm true "Task data"
 // @Success 200
 // @Security ApiKeyAuth
@@ -168,7 +168,7 @@ func (h *TaskHandler) create(c echo.Context) error {
 // @ID task-delete
 // @Router /api/task/{id} [delete]
 // @Accept json
-// @Produce  json
+// @Produce json
 // @Param id path string true "Task ID"
 // @Success 200
 // @Security ApiKeyAuth

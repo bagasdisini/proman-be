@@ -17,6 +17,14 @@ const (
 	ScheduleEtc          = "etc"
 )
 
+func IsValidScheduleType(scheduleType string) bool {
+	switch scheduleType {
+	case ScheduleMeeting, ScheduleDiscussion, ScheduleReview, SchedulePresentation, ScheduleEtc:
+		return true
+	}
+	return false
+}
+
 // Task status
 const (
 	TaskActive    = "active"

@@ -233,3 +233,11 @@ func (r *ProjectCollRepository) InsertOne(projectData *Project) (*Project, error
 	}
 	return data, nil
 }
+
+func (r *ProjectCollRepository) DeleteOneByID(_id primitive.ObjectID) error {
+	_, err := r.coll.UpdateOne(context.TODO(), bson.M{"_id": _id}, bson.M{"$set": bson.M{"is_deleted": true}})
+	if err != nil {
+		return err
+	}
+	return nil
+}

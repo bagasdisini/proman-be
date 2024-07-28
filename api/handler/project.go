@@ -60,11 +60,13 @@ func newProjectForm(c echo.Context) (*projectForm, error) {
 
 type ProjectHandler struct {
 	projectRepo *repository.ProjectCollRepository
+	taskRepo    *repository.TaskCollRepository
 }
 
 func NewProjectHandler(e *echo.Echo, db *mongo.Database) *ProjectHandler {
 	h := &ProjectHandler{
 		projectRepo: repository.NewProjectRepository(db),
+		taskRepo:    repository.NewTaskRepository(db),
 	}
 
 	project := e.Group("/api", context.ContextHandler)
@@ -79,6 +81,8 @@ func NewProjectHandler(e *echo.Echo, db *mongo.Database) *ProjectHandler {
 
 	project.POST("/project", h.create)
 
+	project.DELETE("/project/:id", h.delete)
+
 	return h
 }
 
@@ -88,7 +92,7 @@ func NewProjectHandler(e *echo.Echo, db *mongo.Database) *ProjectHandler {
 // @ID list-project
 // @Router /api/project [get]
 // @Accept json
-// @Produce  json
+// @Produce json
 // @Success 200
 // @Security ApiKeyAuth
 func (h *ProjectHandler) list(c echo.Context) error {
@@ -108,7 +112,7 @@ func (h *ProjectHandler) list(c echo.Context) error {
 // @ID get-project
 // @Router /api/project/{id} [get]
 // @Accept json
-// @Produce  json
+// @Produce json
 // @Param id path string true "Project ID"
 // @Success 200
 // @Security ApiKeyAuth
@@ -136,7 +140,7 @@ func (h *ProjectHandler) detail(c echo.Context) error {
 // @ID project-count
 // @Router /api/project/count [get]
 // @Accept json
-// @Produce  json
+// @Produce json
 // @Success 200
 // @Security ApiKeyAuth
 func (h *ProjectHandler) count(c echo.Context) error {
@@ -173,7 +177,7 @@ func (h *ProjectHandler) count(c echo.Context) error {
 // @ID project-count-type
 // @Router /api/project/count/type [get]
 // @Accept json
-// @Produce  json
+// @Produce json
 // @Success 200
 // @Security ApiKeyAuth
 func (h *ProjectHandler) countByType(c echo.Context) error {
@@ -193,7 +197,7 @@ func (h *ProjectHandler) countByType(c echo.Context) error {
 // @ID list-project-user
 // @Router /api/project/user/{id} [get]
 // @Accept json
-// @Produce  json
+// @Produce json
 // @Param id path string true "User ID"
 // @Success 200
 // @Security ApiKeyAuth
@@ -221,7 +225,7 @@ func (h *ProjectHandler) listByUser(c echo.Context) error {
 // @ID create-project
 // @Router /api/project [post]
 // @Accept json
-// @Produce  json
+// @Produce json
 // @Param name formData string true "Project name"
 // @Param description formData string true "Project description"
 // @Param start_date formData int true "Project start date"
@@ -238,7 +242,7 @@ func (h *ProjectHandler) create(c echo.Context) error {
 		return err
 	}
 
-	tokenData := c.Get("me").(*context.UserClaims)
+	tokenData := c.(*context.Context)
 
 	ownerIncluded := false
 	contributorsOId := make([]primitive.ObjectID, 0)
@@ -247,13 +251,13 @@ func (h *ProjectHandler) create(c echo.Context) error {
 		if err != nil {
 			return echo.NewHTTPError(http.StatusBadRequest, "Invalid contributor.")
 		}
-		if userOId == tokenData.IDAsObjectID {
+		if userOId == tokenData.Claims.IDAsObjectID {
 			ownerIncluded = true
 		}
 		contributorsOId = append(contributorsOId, userOId)
 	}
 	if !ownerIncluded {
-		contributorsOId = append(contributorsOId, tokenData.IDAsObjectID)
+		contributorsOId = append(contributorsOId, tokenData.Claims.IDAsObjectID)
 	}
 
 	logo, err := file.GetFileThenUpload(c, "logo", config.AWS.ProjectLogoDir)
@@ -285,4 +289,42 @@ func (h *ProjectHandler) create(c echo.Context) error {
 		return echo.NewHTTPError(http.StatusBadRequest, "Failed to create project.")
 	}
 	return c.JSON(http.StatusOK, doc)
+}
+
+// Delete Project
+// @Tags Project
+// @Summary Delete project by id
+// @ID delete-project
+// @Router /api/project/{id} [delete]
+// @Accept json
+// @Produce json
+// @Param id path string true "Project ID"
+// @Success 200
+// @Security ApiKeyAuth
+func (h *ProjectHandler) delete(c echo.Context) error {
+	id := c.Param("id")
+
+	OId, err := primitive.ObjectIDFromHex(id)
+	if err != nil {
+		return echo.NewHTTPError(http.StatusBadRequest, "Invalid project ID.")
+	}
+
+	project, err := h.projectRepo.FindOneByID(OId)
+	if err != nil {
+		if errors.Is(err, mongo.ErrNoDocuments) {
+			return echo.NewHTTPError(http.StatusBadRequest, "Project not found")
+		}
+		return err
+	}
+
+	err = h.projectRepo.DeleteOneByID(project.ID)
+	if err != nil {
+		return echo.NewHTTPError(http.StatusBadRequest, "Failed to delete project.")
+	}
+
+	err = h.taskRepo.DeleteAllByProjectID(project.ID)
+	if err != nil {
+		return echo.NewHTTPError(http.StatusBadRequest, "Failed to delete project.")
+	}
+	return c.JSON(http.StatusOK, "Project deleted.")
 }

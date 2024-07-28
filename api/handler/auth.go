@@ -124,7 +124,7 @@ func NewAuthHandler(e *echo.Echo, db *mongo.Database) *AuthHandler {
 // @Router /api/login [post]
 // @Accept json
 // @Param body body loginForm true "login json"
-// @Produce  json
+// @Produce json
 // @Success 200
 func (h *AuthHandler) login(c echo.Context) error {
 	form, err := newLoginForm(c)
@@ -158,7 +158,7 @@ func (h *AuthHandler) login(c echo.Context) error {
 // @Router /api/register [post]
 // @Accept json
 // @Param body body registerForm true "register json"
-// @Produce  json
+// @Produce json
 // @Success 200
 func (h *AuthHandler) register(c echo.Context) error {
 	form, err := newRegisterForm(c)
@@ -201,7 +201,7 @@ func (h *AuthHandler) register(c echo.Context) error {
 // @Router /api/forgot-password [post]
 // @Accept json
 // @Param body body forgotPasswordForm true "forgot password json"
-// @Produce  json
+// @Produce json
 // @Success 200
 func (h *AuthHandler) forgotPassword(c echo.Context) error {
 	form, err := newForgotPasswordForm(c)

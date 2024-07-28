@@ -5,6 +5,7 @@ import (
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
 	"go.mongodb.org/mongo-driver/mongo"
+	"proman-backend/pkg/util"
 	"time"
 )
 
@@ -28,6 +29,43 @@ func NewScheduleRepository(db *mongo.Database) *ScheduleCollRepository {
 	return &ScheduleCollRepository{
 		coll: db.Collection("schedules"),
 	}
+}
+
+func (r *ScheduleCollRepository) FindAll(cq *util.ScheduleQuery) ([]Schedule, error) {
+	var schedules []Schedule
+	filter := bson.M{"is_deleted": false}
+
+	if len(cq.Q) > 0 {
+		filter["$or"] = []bson.M{
+			{"name": bson.M{"$regex": primitive.Regex{Pattern: cq.Q, Options: "i"}}},
+			{"description": bson.M{"$regex": primitive.Regex{Pattern: cq.Q, Options: "i"}}},
+		}
+	}
+
+	if len(cq.Type) > 0 {
+		filter["type"] = cq.Type
+	}
+
+	if len(cq.Contributor) > 0 {
+		filter["contributor"] = bson.M{"$in": cq.Contributor}
+	}
+
+	if !cq.Start.IsZero() {
+		filter["start_date"] = bson.M{"$gte": cq.Start}
+	}
+
+	if !cq.End.IsZero() {
+		filter["end_date"] = bson.M{"$lte": cq.End}
+	}
+
+	cursor, err := r.coll.Find(context.TODO(), filter)
+	if err != nil {
+		return nil, err
+	}
+	if err := cursor.All(context.TODO(), &schedules); err != nil {
+		return nil, err
+	}
+	return schedules, nil
 }
 
 func (r *ScheduleCollRepository) FindAllByDateRange(startDate, endDate time.Time) ([]Schedule, error) {

@@ -59,9 +59,7 @@ func (c *Context) LoggedInUser() *repository.User {
 			log.Panicc(c, err)
 		}
 		c.loggedInUser = u
-
 		c.Claims.Role = u.Role
-		c.Set("me", c.Claims)
 	}
 	return c.loggedInUser
 }
