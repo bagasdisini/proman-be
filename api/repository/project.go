@@ -66,11 +66,12 @@ type CountProjectDetail struct {
 	Active    int `json:"active"`
 	Completed int `json:"completed"`
 	Pending   int `json:"pending"`
+	Cancelled int `json:"cancelled"`
 }
 
 type CountProject struct {
-	Current   CountProjectDetail `json:"current"`
-	LastMonth CountProjectDetail `json:"last_month"`
+	Current  CountProjectDetail `json:"current"`
+	LastYear CountProjectDetail `json:"last_year"`
 }
 
 type CountTypeProject struct {
@@ -135,8 +136,8 @@ func (r *ProjectCollRepository) FindAllByContributorID(_id primitive.ObjectID) (
 	return &projects, nil
 }
 
-func (r *ProjectCollRepository) CountProject(start, end time.Time) (*CountProjectDetail, error) {
-	var count CountProjectDetail
+func (r *ProjectCollRepository) CountProject(start, end time.Time) (*[]CountProjectDetail, error) {
+	var count []CountProjectDetail
 	match := bson.D{
 		{"$match", bson.D{
 			{"is_deleted", bson.M{"$ne": true}},
@@ -168,11 +169,15 @@ func (r *ProjectCollRepository) CountProject(start, end time.Time) (*CountProjec
 func (r *ProjectCollRepository) CountTypeProject() (*[]CountTypeProject, error) {
 	var count []CountTypeProject
 	match := bson.D{
-		{"$match", bson.D{{"is_deleted", bson.M{"$ne": true}}}},
+		{"$match", bson.D{
+			{"is_deleted", bson.M{"$ne": true}},
+			{"status", _const.ProjectActive},
+		}},
 	}
 	group := bson.D{
 		{"$group", bson.D{
 			{"_id", "$type"},
+			{"type", bson.D{{"$first", "$type"}}},
 			{"total", bson.D{{"$sum", 1}}},
 		}},
 	}

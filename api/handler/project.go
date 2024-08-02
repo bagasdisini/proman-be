@@ -144,8 +144,8 @@ func (h *ProjectHandler) detail(c echo.Context) error {
 // @Success 200
 // @Security ApiKeyAuth
 func (h *ProjectHandler) count(c echo.Context) error {
-	currentEnd := time.Now()
-	currentStart := currentEnd.AddDate(0, 0, -30)
+	currentEnd := time.Date(time.Now().Year(), 12, 31, 23, 59, 59, 0, time.Local)
+	currentStart := time.Date(time.Now().Year(), 1, 1, 0, 0, 0, 0, time.Local)
 	current, err := h.projectRepo.CountProject(currentStart, currentEnd)
 	if err != nil {
 		if errors.Is(err, mongo.ErrNoDocuments) {
@@ -154,8 +154,8 @@ func (h *ProjectHandler) count(c echo.Context) error {
 		return err
 	}
 
-	prevEnd := currentStart.Add(-time.Second)
-	prevStart := prevEnd.AddDate(0, 0, -30)
+	prevEnd := currentStart.AddDate(0, 0, -1)
+	prevStart := time.Date(prevEnd.Year(), 1, 1, 0, 0, 0, 0, time.Local)
 	previous, err := h.projectRepo.CountProject(prevStart, prevEnd)
 	if err != nil {
 		if errors.Is(err, mongo.ErrNoDocuments) {
@@ -164,9 +164,16 @@ func (h *ProjectHandler) count(c echo.Context) error {
 		return err
 	}
 
-	docs := repository.CountProject{
-		Current:   *current,
-		LastMonth: *previous,
+	docs := repository.CountProject{}
+	if len(*current) > 0 {
+		docs.Current = (*current)[0]
+	} else {
+		docs.Current = repository.CountProjectDetail{}
+	}
+	if len(*previous) > 0 {
+		docs.LastYear = (*previous)[0]
+	} else {
+		docs.LastYear = repository.CountProjectDetail{}
 	}
 	return c.JSON(http.StatusOK, docs)
 }
@@ -274,8 +281,8 @@ func (h *ProjectHandler) create(c echo.Context) error {
 		Name:        form.Name,
 		Description: form.Description,
 		Type:        form.Type,
-		StartDate:   time.Unix(form.StartDate, 0),
-		EndDate:     time.Unix(form.EndDate, 0),
+		StartDate:   time.UnixMilli(form.StartDate),
+		EndDate:     time.UnixMilli(form.EndDate),
 		Contributor: contributorsOId,
 		Status:      _const.ProjectActive,
 		Attachments: attachments,
