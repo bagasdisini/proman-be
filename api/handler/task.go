@@ -67,6 +67,7 @@ func NewTaskHandler(e *echo.Echo, db *mongo.Database) *TaskHandler {
 	task := e.Group("/api", context.ContextHandler)
 
 	task.GET("/task/count", h.taskCount)
+	task.GET("/task/status", h.taskListByStatus)
 
 	task.POST("/task", h.create)
 
@@ -85,8 +86,8 @@ func NewTaskHandler(e *echo.Echo, db *mongo.Database) *TaskHandler {
 // @Success 200
 // @Security ApiKeyAuth
 func (h *TaskHandler) taskCount(c echo.Context) error {
-	currentEnd := time.Now()
-	currentStart := currentEnd.AddDate(0, 0, -30)
+	currentEnd := time.Date(time.Now().Year(), 12, 31, 23, 59, 59, 0, time.Local)
+	currentStart := time.Date(time.Now().Year(), 1, 1, 0, 0, 0, 0, time.Local)
 	current, err := h.taskRepo.CountTask(currentStart, currentEnd)
 	if err != nil {
 		if errors.Is(err, mongo.ErrNoDocuments) {
@@ -95,8 +96,8 @@ func (h *TaskHandler) taskCount(c echo.Context) error {
 		return err
 	}
 
-	prevEnd := currentStart.Add(-time.Second)
-	prevStart := prevEnd.AddDate(0, 0, -30)
+	prevEnd := currentStart.AddDate(0, 0, -1)
+	prevStart := time.Date(prevEnd.Year(), prevEnd.Month(), 1, 0, 0, 0, 0, time.Local)
 	previous, err := h.taskRepo.CountTask(prevStart, prevEnd)
 	if err != nil {
 		if errors.Is(err, mongo.ErrNoDocuments) {
@@ -105,9 +106,67 @@ func (h *TaskHandler) taskCount(c echo.Context) error {
 		return err
 	}
 
-	docs := repository.CountTask{
-		Current:   *current,
-		LastMonth: *previous,
+	docs := repository.CountTask{}
+	if len(*current) > 0 {
+		docs.Current = (*current)[0]
+	} else {
+		docs.Current = repository.CountTaskDetail{}
+	}
+	if len(*previous) > 0 {
+		docs.LastYear = (*previous)[0]
+	} else {
+		docs.LastYear = repository.CountTaskDetail{}
+	}
+	return c.JSON(http.StatusOK, docs)
+}
+
+// Task List By Status
+// @Tags Task
+// @Summary Get task list by status
+// @ID task-list-status
+// @Router /api/task/status [get]
+// @Accept json
+// @Produce json
+// @Success 200
+// @Security ApiKeyAuth
+func (h *TaskHandler) taskListByStatus(c echo.Context) error {
+	active, err := h.taskRepo.FindAllByStatus(_const.TaskActive)
+	if err != nil {
+		if errors.Is(err, mongo.ErrNoDocuments) {
+			return echo.NewHTTPError(http.StatusBadRequest, "Task not found")
+		}
+		return err
+	}
+
+	testing, err := h.taskRepo.FindAllByStatus(_const.TaskTesting)
+	if err != nil {
+		if errors.Is(err, mongo.ErrNoDocuments) {
+			return echo.NewHTTPError(http.StatusBadRequest, "Task not found")
+		}
+		return err
+	}
+
+	completed, err := h.taskRepo.FindAllByStatus(_const.TaskCompleted)
+	if err != nil {
+		if errors.Is(err, mongo.ErrNoDocuments) {
+			return echo.NewHTTPError(http.StatusBadRequest, "Task not found")
+		}
+		return err
+	}
+
+	cancelled, err := h.taskRepo.FindAllByStatus(_const.TaskCancelled)
+	if err != nil {
+		if errors.Is(err, mongo.ErrNoDocuments) {
+			return echo.NewHTTPError(http.StatusBadRequest, "Task not found")
+		}
+		return err
+	}
+
+	docs := repository.TaskGroup{
+		Active:    active,
+		Testing:   testing,
+		Completed: completed,
+		Cancelled: cancelled,
 	}
 	return c.JSON(http.StatusOK, docs)
 }
@@ -146,8 +205,8 @@ func (h *TaskHandler) create(c echo.Context) error {
 		ID:          primitive.NewObjectID(),
 		Name:        form.Name,
 		Description: form.Description,
-		StartDate:   time.Unix(form.StartDate, 0),
-		EndDate:     time.Unix(form.EndDate, 0),
+		StartDate:   time.UnixMilli(form.StartDate),
+		EndDate:     time.UnixMilli(form.EndDate),
 		Contributor: contributorsOId,
 		Status:      _const.TaskActive,
 		ProjectID:   projectOId,

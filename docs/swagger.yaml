@@ -113,6 +113,21 @@ paths:
       summary: Get my info
       tags:
       - Me
+  /api/me/projects:
+    get:
+      consumes:
+      - application/json
+      operationId: my-projects
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+      security:
+      - ApiKeyAuth: []
+      summary: Get my projects
+      tags:
+      - Me
   /api/me/schedule:
     get:
       consumes:
@@ -150,6 +165,21 @@ paths:
       security:
       - ApiKeyAuth: []
       summary: Get my schedule
+      tags:
+      - Me
+  /api/me/tasks:
+    get:
+      consumes:
+      - application/json
+      operationId: my-tasks
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+      security:
+      - ApiKeyAuth: []
+      summary: Get my tasks
       tags:
       - Me
   /api/project:
@@ -410,6 +440,21 @@ paths:
       security:
       - ApiKeyAuth: []
       summary: Get task count
+      tags:
+      - Task
+  /api/task/status:
+    get:
+      consumes:
+      - application/json
+      operationId: task-list-status
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+      security:
+      - ApiKeyAuth: []
+      summary: Get task list by status
       tags:
       - Task
   /api/user/count:

@@ -102,6 +102,31 @@ const docTemplate = `{
                 }
             }
         },
+        "/api/me/projects": {
+            "get": {
+                "security": [
+                    {
+                        "ApiKeyAuth": []
+                    }
+                ],
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Me"
+                ],
+                "summary": "Get my projects",
+                "operationId": "my-projects",
+                "responses": {
+                    "200": {
+                        "description": "OK"
+                    }
+                }
+            }
+        },
         "/api/me/schedule": {
             "get": {
                 "security": [
@@ -154,6 +179,31 @@ const docTemplate = `{
                         "in": "query"
                     }
                 ],
+                "responses": {
+                    "200": {
+                        "description": "OK"
+                    }
+                }
+            }
+        },
+        "/api/me/tasks": {
+            "get": {
+                "security": [
+                    {
+                        "ApiKeyAuth": []
+                    }
+                ],
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Me"
+                ],
+                "summary": "Get my tasks",
+                "operationId": "my-tasks",
                 "responses": {
                     "200": {
                         "description": "OK"
@@ -536,6 +586,31 @@ const docTemplate = `{
                 ],
                 "summary": "Get task count",
                 "operationId": "task-count",
+                "responses": {
+                    "200": {
+                        "description": "OK"
+                    }
+                }
+            }
+        },
+        "/api/task/status": {
+            "get": {
+                "security": [
+                    {
+                        "ApiKeyAuth": []
+                    }
+                ],
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Task"
+                ],
+                "summary": "Get task list by status",
+                "operationId": "task-list-status",
                 "responses": {
                     "200": {
                         "description": "OK"

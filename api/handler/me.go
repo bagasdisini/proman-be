@@ -30,6 +30,8 @@ func NewMeHandler(e *echo.Echo, db *mongo.Database) *MeHandler {
 
 	me.GET("/me", h.me)
 	me.GET("/me/schedule", h.mySchedule)
+	me.GET("/me/projects", h.myProjects)
+	me.GET("/me/tasks", h.myTasks)
 
 	return h
 }
@@ -91,4 +93,46 @@ func (h *MeHandler) mySchedule(c echo.Context) error {
 		return err
 	}
 	return c.JSON(http.StatusOK, schedules)
+}
+
+// My Projects
+// @Tags Me
+// @Summary Get my projects
+// @ID my-projects
+// @Router /api/me/projects [get]
+// @Accept json
+// @Produce json
+// @Success 200
+// @Security ApiKeyAuth
+func (h *MeHandler) myProjects(c echo.Context) error {
+	uc := c.(*context.Context)
+	projects, err := h.projectRepo.FindAllByContributorID(uc.Claims.IDAsObjectID)
+	if err != nil {
+		if errors.Is(err, mongo.ErrNoDocuments) {
+			return echo.NewHTTPError(http.StatusNotFound, "Project not found")
+		}
+		return err
+	}
+	return c.JSON(http.StatusOK, projects)
+}
+
+// My Tasks
+// @Tags Me
+// @Summary Get my tasks
+// @ID my-tasks
+// @Router /api/me/tasks [get]
+// @Accept json
+// @Produce json
+// @Success 200
+// @Security ApiKeyAuth
+func (h *MeHandler) myTasks(c echo.Context) error {
+	uc := c.(*context.Context)
+	tasks, err := h.taskRepo.FindAllByUserID(uc.Claims.IDAsObjectID)
+	if err != nil {
+		if errors.Is(err, mongo.ErrNoDocuments) {
+			return echo.NewHTTPError(http.StatusNotFound, "Task not found")
+		}
+		return err
+	}
+	return c.JSON(http.StatusOK, tasks)
 }
