@@ -49,8 +49,8 @@ type CountUserActive struct {
 }
 
 type CountUser struct {
-	Current   CountUserActive `json:"current"`
-	LastMonth CountUserActive `json:"last_month"`
+	Current  CountUserActive `json:"current"`
+	LastYear CountUserActive `json:"last_year"`
 }
 
 type TaskCollRepository struct {

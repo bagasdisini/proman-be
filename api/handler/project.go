@@ -96,7 +96,7 @@ func NewProjectHandler(e *echo.Echo, db *mongo.Database) *ProjectHandler {
 // @Success 200
 // @Security ApiKeyAuth
 func (h *ProjectHandler) list(c echo.Context) error {
-	projects, err := h.projectRepo.FindAll()
+	projects, err := h.projectRepo.FindAll(h.taskRepo)
 	if err != nil {
 		if errors.Is(err, mongo.ErrNoDocuments) {
 			return echo.NewHTTPError(http.StatusBadRequest, "Project not found")

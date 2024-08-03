@@ -25,6 +25,7 @@ type Project struct {
 	Logo        string               `json:"logo" bson:"logo"`
 	CreatedAt   time.Time            `json:"created_at" bson:"created_at"`
 	IsDeleted   bool                 `json:"-" bson:"is_deleted"`
+	TaskCount   CountTaskDetail      `json:"task_count" bson:"task_count"`
 }
 
 func (u *Project) MarshalJSON() ([]byte, error) {
@@ -89,7 +90,7 @@ func NewProjectRepository(db *mongo.Database) *ProjectCollRepository {
 	}
 }
 
-func (r *ProjectCollRepository) FindAll() (*[]Project, error) {
+func (r *ProjectCollRepository) FindAll(taskRepo *TaskCollRepository) (*[]Project, error) {
 	var projects []Project
 	filter := bson.M{"is_deleted": bson.M{"$ne": true}}
 
@@ -100,6 +101,26 @@ func (r *ProjectCollRepository) FindAll() (*[]Project, error) {
 
 	if err = cursor.All(context.Background(), &projects); err != nil {
 		return nil, err
+	}
+
+	for i, project := range projects {
+		count, err := taskRepo.FindAllByProjectID(project.ID)
+		if err != nil {
+			return nil, err
+		}
+
+		for _, c := range count {
+			if c.Status == _const.TaskActive {
+				projects[i].TaskCount.Active++
+			} else if c.Status == _const.TaskTesting {
+				projects[i].TaskCount.Testing++
+			} else if c.Status == _const.TaskCompleted {
+				projects[i].TaskCount.Completed++
+			} else if c.Status == _const.TaskCancelled {
+				projects[i].TaskCount.Cancelled++
+			}
+			projects[i].TaskCount.Total++
+		}
 	}
 	return &projects, nil
 }

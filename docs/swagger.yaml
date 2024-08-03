@@ -457,6 +457,21 @@ paths:
       summary: Get task list by status
       tags:
       - Task
+  /api/user:
+    get:
+      consumes:
+      - application/json
+      operationId: user-latest
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+      security:
+      - ApiKeyAuth: []
+      summary: Get list users
+      tags:
+      - User
   /api/user/count:
     get:
       consumes:
@@ -470,35 +485,6 @@ paths:
       security:
       - ApiKeyAuth: []
       summary: Get user count
-      tags:
-      - User
-  /api/user/latest:
-    get:
-      consumes:
-      - application/json
-      operationId: user-latest
-      parameters:
-      - default: 10
-        description: Limit
-        in: query
-        name: limit
-        type: integer
-      - default: '"desc"'
-        description: Sort
-        enum:
-        - desc
-        - asc
-        in: query
-        name: sort
-        type: string
-      produces:
-      - application/json
-      responses:
-        "200":
-          description: OK
-      security:
-      - ApiKeyAuth: []
-      summary: Get latest users joined
       tags:
       - User
 securityDefinitions:

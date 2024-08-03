@@ -6,6 +6,7 @@ import (
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
 	"go.mongodb.org/mongo-driver/mongo"
+	"go.mongodb.org/mongo-driver/mongo/options"
 	"proman-backend/internal/config"
 	"strings"
 	"time"
@@ -22,7 +23,7 @@ type User struct {
 	Phone        string             `json:"phone" bson:"phone"`
 	CreatedAt    time.Time          `json:"created_at" bson:"created_at"`
 	IsDeleted    bool               `json:"-" bson:"is_deleted"`
-	TotalProject int                `json:"total_project,omitempty" bson:"total_project,omitempty"`
+	TotalProject int                `json:"total_project" bson:"total_project"`
 }
 
 func (u *User) MarshalJSON() ([]byte, error) {
@@ -59,7 +60,9 @@ func (r *UserCollRepository) FindAllUsers(projectRepo *ProjectCollRepository) (*
 	var users []User
 	filter := bson.M{"is_deleted": bson.M{"$ne": true}}
 
-	cursor, err := r.coll.Find(context.TODO(), filter)
+	sort := bson.M{"created_at": -1}
+
+	cursor, err := r.coll.Find(context.TODO(), filter, &options.FindOptions{Sort: sort})
 	if err != nil {
 		return nil, err
 	}

@@ -7,19 +7,20 @@ import (
 	"net/http"
 	"proman-backend/api/repository"
 	"proman-backend/pkg/context"
-	"proman-backend/pkg/util"
 	"time"
 )
 
 type UserHandler struct {
-	userRepo *repository.UserCollRepository
-	taskRepo *repository.TaskCollRepository
+	userRepo    *repository.UserCollRepository
+	taskRepo    *repository.TaskCollRepository
+	projectRepo *repository.ProjectCollRepository
 }
 
 func NewUserHandler(e *echo.Echo, db *mongo.Database) *UserHandler {
 	h := &UserHandler{
-		userRepo: repository.NewUserRepository(db),
-		taskRepo: repository.NewTaskRepository(db),
+		userRepo:    repository.NewUserRepository(db),
+		taskRepo:    repository.NewTaskRepository(db),
+		projectRepo: repository.NewProjectRepository(db),
 	}
 
 	user := e.Group("/api", context.ContextHandler)
@@ -40,8 +41,8 @@ func NewUserHandler(e *echo.Echo, db *mongo.Database) *UserHandler {
 // @Success 200
 // @Security ApiKeyAuth
 func (h *UserHandler) userCount(c echo.Context) error {
-	currentEnd := time.Now()
-	currentStart := currentEnd.AddDate(0, 0, -30)
+	currentEnd := time.Date(time.Now().Year(), 12, 31, 23, 59, 59, 0, time.Local)
+	currentStart := time.Date(time.Now().Year(), 1, 1, 0, 0, 0, 0, time.Local)
 	current, err := h.taskRepo.CountUserThatHaveTask(h.userRepo, currentStart, currentEnd)
 	if err != nil {
 		if errors.Is(err, mongo.ErrNoDocuments) {
@@ -50,8 +51,8 @@ func (h *UserHandler) userCount(c echo.Context) error {
 		return err
 	}
 
-	prevEnd := currentStart.Add(-time.Second)
-	prevStart := prevEnd.AddDate(0, 0, -30)
+	prevEnd := currentStart.AddDate(0, 0, -1)
+	prevStart := time.Date(prevEnd.Year(), 1, 1, 0, 0, 0, 0, time.Local)
 	previous, err := h.taskRepo.CountUserThatHaveTask(h.userRepo, prevStart, prevEnd)
 	if err != nil {
 		if errors.Is(err, mongo.ErrNoDocuments) {
@@ -61,28 +62,28 @@ func (h *UserHandler) userCount(c echo.Context) error {
 	}
 
 	docs := repository.CountUser{
-		Current:   *current,
-		LastMonth: *previous,
+		Current:  *current,
+		LastYear: *previous,
 	}
 	return c.JSON(http.StatusOK, docs)
 }
 
-// User Latest
+// User List
 // @Tags User
-// @Summary Get latest users joined
+// @Summary Get list users
 // @ID user-latest
-// @Param limit query int false "Limit" default(10)
-// @Param sort query string false "Sort" default("desc") Enums(desc,asc)
-// @Router /api/user/latest [get]
+// @Router /api/user [get]
 // @Accept json
 // @Produce json
-//@Success 200
+// @Success 200
 // @Security ApiKeyAuth
 func (h *UserHandler) userList(c echo.Context) error {
-	_, err := util.NewCommonQuery(c)
+	users, err := h.userRepo.FindAllUsers(h.projectRepo)
 	if err != nil {
-		return echo.NewHTTPError(http.StatusBadRequest, err)
+		if errors.Is(err, mongo.ErrNoDocuments) {
+			return echo.NewHTTPError(http.StatusBadRequest, "User not found")
+		}
+		return err
 	}
-
-	return err
+	return c.JSON(http.StatusOK, users)
 }
