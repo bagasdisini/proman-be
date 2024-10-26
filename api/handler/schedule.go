@@ -1,12 +1,15 @@
 package handler
 
 import (
+	"errors"
 	"github.com/labstack/echo/v4"
 	"go.mongodb.org/mongo-driver/bson/primitive"
 	"go.mongodb.org/mongo-driver/mongo"
 	"net/http"
 	"proman-backend/api/repository"
 	"proman-backend/pkg/context"
+	"proman-backend/pkg/log"
+	"proman-backend/pkg/util"
 	"strings"
 	"time"
 )
@@ -23,6 +26,7 @@ type scheduleForm struct {
 func newScheduleForm(c echo.Context) (*scheduleForm, error) {
 	form := scheduleForm{}
 	if err := c.Bind(&form); err != nil {
+		log.Errorf("Error binding schedule form: %v", err)
 		return nil, echo.NewHTTPError(http.StatusBadRequest, "Invalid data format.")
 	}
 
@@ -63,9 +67,41 @@ func NewScheduleHandler(e *echo.Echo, db *mongo.Database) *ScheduleHandler {
 
 	schedule := e.Group("/api", context.ContextHandler)
 
+	schedule.GET("/schedules", h.list)
+
 	schedule.POST("/schedule", h.create)
 
 	return h
+}
+
+// List Schedule
+// @Tags Schedule
+// @Summary Get list of schedule
+// @ID list-schedule
+// @Router /api/schedules [get]
+// @Param q query string false "Search by name"
+// @Param type query string false "Search by type" Enums(all, meeting, discussion, review, presentation, etc)
+// @Param start query string false "Start date"
+// @Param end query string false "End date"
+// @Accept json
+// @Produce json
+// @Success 200
+// @Security ApiKeyAuth
+func (h *ScheduleHandler) list(c echo.Context) error {
+	cq, err := util.NewScheduleQuery(c)
+	if err != nil {
+		return err
+	}
+
+	schedules, err := h.scheduleRepo.FindAll(cq)
+	if err != nil {
+		if errors.Is(err, mongo.ErrNoDocuments) {
+			return echo.NewHTTPError(http.StatusNotFound, "Schedule not found")
+		}
+		log.Errorf("Error finding schedule: %v", err)
+		return echo.NewHTTPError(http.StatusInternalServerError, "There was an error, please try again")
+	}
+	return c.JSON(http.StatusOK, schedules)
 }
 
 // Create Schedule
@@ -106,7 +142,8 @@ func (h *ScheduleHandler) create(c echo.Context) error {
 	}
 
 	if err := h.scheduleRepo.CreateOne(schedule); err != nil {
-		return err
+		log.Errorf("Failed to create schedule: %v", err)
+		return echo.NewHTTPError(http.StatusInternalServerError, "There was an error, please try again")
 	}
 	return c.JSON(http.StatusCreated, schedule)
 }

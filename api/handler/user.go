@@ -7,7 +7,7 @@ import (
 	"net/http"
 	"proman-backend/api/repository"
 	"proman-backend/pkg/context"
-	"time"
+	"proman-backend/pkg/log"
 )
 
 type UserHandler struct {
@@ -41,31 +41,15 @@ func NewUserHandler(e *echo.Echo, db *mongo.Database) *UserHandler {
 // @Success 200
 // @Security ApiKeyAuth
 func (h *UserHandler) userCount(c echo.Context) error {
-	currentEnd := time.Date(time.Now().Year(), 12, 31, 23, 59, 59, 0, time.Local)
-	currentStart := time.Date(time.Now().Year(), 1, 1, 0, 0, 0, 0, time.Local)
-	current, err := h.taskRepo.CountUserThatHaveTask(h.userRepo, currentStart, currentEnd)
+	count, err := h.taskRepo.CountUserThatHaveTask(h.userRepo)
 	if err != nil {
 		if errors.Is(err, mongo.ErrNoDocuments) {
 			return echo.NewHTTPError(http.StatusBadRequest, "User not found")
 		}
-		return err
+		log.Errorf("Error counting user: %v", err)
+		return echo.NewHTTPError(http.StatusInternalServerError, "There was an error, please try again")
 	}
-
-	prevEnd := currentStart.AddDate(0, 0, -1)
-	prevStart := time.Date(prevEnd.Year(), 1, 1, 0, 0, 0, 0, time.Local)
-	previous, err := h.taskRepo.CountUserThatHaveTask(h.userRepo, prevStart, prevEnd)
-	if err != nil {
-		if errors.Is(err, mongo.ErrNoDocuments) {
-			return echo.NewHTTPError(http.StatusBadRequest, "User not found")
-		}
-		return err
-	}
-
-	docs := repository.CountUser{
-		Current:  *current,
-		LastYear: *previous,
-	}
-	return c.JSON(http.StatusOK, docs)
+	return c.JSON(http.StatusOK, count)
 }
 
 // User List
@@ -78,12 +62,13 @@ func (h *UserHandler) userCount(c echo.Context) error {
 // @Success 200
 // @Security ApiKeyAuth
 func (h *UserHandler) userList(c echo.Context) error {
-	users, err := h.userRepo.FindAllUsers(h.projectRepo)
+	users, err := h.userRepo.FindAllUsers()
 	if err != nil {
 		if errors.Is(err, mongo.ErrNoDocuments) {
 			return echo.NewHTTPError(http.StatusBadRequest, "User not found")
 		}
-		return err
+		log.Errorf("Error finding user: %v", err)
+		return echo.NewHTTPError(http.StatusInternalServerError, "There was an error, please try again")
 	}
 	return c.JSON(http.StatusOK, users)
 }

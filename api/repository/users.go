@@ -6,7 +6,6 @@ import (
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
 	"go.mongodb.org/mongo-driver/mongo"
-	"go.mongodb.org/mongo-driver/mongo/options"
 	"proman-backend/internal/config"
 	"strings"
 	"time"
@@ -24,6 +23,7 @@ type User struct {
 	CreatedAt    time.Time          `json:"created_at" bson:"created_at"`
 	IsDeleted    bool               `json:"-" bson:"is_deleted"`
 	TotalProject int                `json:"total_project" bson:"total_project"`
+	TotalTask    int                `json:"total_task" bson:"total_task"`
 }
 
 func (u *User) MarshalJSON() ([]byte, error) {
@@ -56,13 +56,66 @@ func NewUserRepository(db *mongo.Database) *UserCollRepository {
 	}
 }
 
-func (r *UserCollRepository) FindAllUsers(projectRepo *ProjectCollRepository) (*[]User, error) {
+func (r *UserCollRepository) FindAllUsers() (*[]User, error) {
 	var users []User
-	filter := bson.M{"is_deleted": bson.M{"$ne": true}}
 
-	sort := bson.M{"created_at": -1}
+	pipeline := mongo.Pipeline{
+		{{"$match", bson.D{{"is_deleted", bson.D{{"$ne", true}}}}}},
+		{{"$lookup", bson.D{
+			{"from", "projects"},
+			{"let", bson.D{{"user_id", "$_id"}}},
+			{"pipeline", mongo.Pipeline{
+				{{"$match", bson.D{
+					{"$expr", bson.D{
+						{"$and", bson.A{
+							bson.D{{"$eq", bson.A{"$is_deleted", false}}},
+							bson.D{{"$in", bson.A{"$$user_id", "$contributor"}}},
+						}},
+					}},
+				}}},
+				{{"$count", "total"}},
+			}},
+			{"as", "projects"},
+		}}},
+		{{"$addFields", bson.D{
+			{"total_project", bson.D{
+				{"$cond", bson.D{
+					{"if", bson.D{{"$gt", bson.A{bson.D{{"$size", "$projects"}}, 0}}}},
+					{"then", bson.D{{"$arrayElemAt", bson.A{"$projects.total", 0}}}},
+					{"else", 0},
+				}},
+			}},
+		}}},
+		{{"$lookup", bson.D{
+			{"from", "tasks"},
+			{"let", bson.D{{"user_id", "$_id"}}},
+			{"pipeline", mongo.Pipeline{
+				{{"$match", bson.D{
+					{"$expr", bson.D{
+						{"$and", bson.A{
+							bson.D{{"$eq", bson.A{"$is_deleted", false}}},
+							bson.D{{"$in", bson.A{"$$user_id", "$contributor"}}},
+						}},
+					}},
+				}}},
+				{{"$count", "total"}},
+			}},
+			{"as", "tasks"},
+		}}},
+		{{"$addFields", bson.D{
+			{"total_task", bson.D{
+				{"$cond", bson.D{
+					{"if", bson.D{{"$gt", bson.A{bson.D{{"$size", "$tasks"}}, 0}}}},
+					{"then", bson.D{{"$arrayElemAt", bson.A{"$tasks.total", 0}}}},
+					{"else", 0},
+				}},
+			}},
+		}}},
+		{{"$unset", bson.A{"projects", "tasks"}}},
+		{{"$sort", bson.D{{"created_at", -1}}}},
+	}
 
-	cursor, err := r.coll.Find(context.TODO(), filter, &options.FindOptions{Sort: sort})
+	cursor, err := r.coll.Aggregate(context.TODO(), pipeline)
 	if err != nil {
 		return nil, err
 	}
@@ -78,18 +131,13 @@ func (r *UserCollRepository) FindAllUsers(projectRepo *ProjectCollRepository) (*
 		if err := cursor.Decode(&user); err != nil {
 			return nil, err
 		}
-
-		totalProjects, err := projectRepo.CountProjectsForUser(user.ID)
-		if err != nil {
-			return nil, err
-		}
-		user.TotalProject = totalProjects
 		users = append(users, user)
 	}
 
 	if err := cursor.Err(); err != nil {
 		return nil, err
 	}
+
 	return &users, nil
 }
 

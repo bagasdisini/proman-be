@@ -11,6 +11,7 @@ import (
 	_const "proman-backend/pkg/const"
 	"proman-backend/pkg/context"
 	"proman-backend/pkg/file"
+	"proman-backend/pkg/log"
 	"strings"
 	"time"
 )
@@ -29,6 +30,7 @@ type projectForm struct {
 func newProjectForm(c echo.Context) (*projectForm, error) {
 	form := projectForm{}
 	if err := c.Bind(&form); err != nil {
+		log.Errorf("Error binding project form: %v", err)
 		return nil, echo.NewHTTPError(http.StatusBadRequest, "Invalid data format.")
 	}
 
@@ -71,13 +73,8 @@ func NewProjectHandler(e *echo.Echo, db *mongo.Database) *ProjectHandler {
 
 	project := e.Group("/api", context.ContextHandler)
 
-	project.GET("/project", h.list)
+	project.GET("/projects", h.list)
 	project.GET("/project/:id", h.detail)
-
-	project.GET("/project/count", h.count)
-	project.GET("/project/count/type", h.countByType)
-
-	project.GET("/project/user/:id", h.listByUser)
 
 	project.POST("/project", h.create)
 
@@ -90,18 +87,19 @@ func NewProjectHandler(e *echo.Echo, db *mongo.Database) *ProjectHandler {
 // @Tags Project
 // @Summary Get list of project
 // @ID list-project
-// @Router /api/project [get]
+// @Router /api/projects [get]
 // @Accept json
 // @Produce json
 // @Success 200
 // @Security ApiKeyAuth
 func (h *ProjectHandler) list(c echo.Context) error {
-	projects, err := h.projectRepo.FindAll(h.taskRepo)
+	projects, err := h.projectRepo.FindAll()
 	if err != nil {
 		if errors.Is(err, mongo.ErrNoDocuments) {
 			return echo.NewHTTPError(http.StatusBadRequest, "Project not found")
 		}
-		return err
+		log.Errorf("Error finding project: %v", err)
+		return echo.NewHTTPError(http.StatusInternalServerError, "There was an error, please try again")
 	}
 	return c.JSON(http.StatusOK, projects)
 }
@@ -119,111 +117,20 @@ func (h *ProjectHandler) list(c echo.Context) error {
 func (h *ProjectHandler) detail(c echo.Context) error {
 	id := c.Param("id")
 
-	OId, err := primitive.ObjectIDFromHex(id)
+	oId, err := primitive.ObjectIDFromHex(id)
 	if err != nil {
 		return echo.NewHTTPError(http.StatusBadRequest, "Invalid project ID.")
 	}
 
-	project, err := h.projectRepo.FindOneByID(OId)
+	project, err := h.projectRepo.FindOneByID(oId)
 	if err != nil {
 		if errors.Is(err, mongo.ErrNoDocuments) {
 			return echo.NewHTTPError(http.StatusBadRequest, "Project not found")
 		}
-		return err
+		log.Errorf("Error finding project: %v", err)
+		return echo.NewHTTPError(http.StatusInternalServerError, "There was an error, please try again")
 	}
 	return c.JSON(http.StatusOK, project)
-}
-
-// Project Count
-// @Tags Project
-// @Summary Get project count
-// @ID project-count
-// @Router /api/project/count [get]
-// @Accept json
-// @Produce json
-// @Success 200
-// @Security ApiKeyAuth
-func (h *ProjectHandler) count(c echo.Context) error {
-	currentEnd := time.Date(time.Now().Year(), 12, 31, 23, 59, 59, 0, time.Local)
-	currentStart := time.Date(time.Now().Year(), 1, 1, 0, 0, 0, 0, time.Local)
-	current, err := h.projectRepo.CountProject(currentStart, currentEnd)
-	if err != nil {
-		if errors.Is(err, mongo.ErrNoDocuments) {
-			return echo.NewHTTPError(http.StatusBadRequest, "Project not found")
-		}
-		return err
-	}
-
-	prevEnd := currentStart.AddDate(0, 0, -1)
-	prevStart := time.Date(prevEnd.Year(), 1, 1, 0, 0, 0, 0, time.Local)
-	previous, err := h.projectRepo.CountProject(prevStart, prevEnd)
-	if err != nil {
-		if errors.Is(err, mongo.ErrNoDocuments) {
-			return echo.NewHTTPError(http.StatusBadRequest, "Project not found")
-		}
-		return err
-	}
-
-	docs := repository.CountProject{}
-	if len(*current) > 0 {
-		docs.Current = (*current)[0]
-	} else {
-		docs.Current = repository.CountProjectDetail{}
-	}
-	if len(*previous) > 0 {
-		docs.LastYear = (*previous)[0]
-	} else {
-		docs.LastYear = repository.CountProjectDetail{}
-	}
-	return c.JSON(http.StatusOK, docs)
-}
-
-// Project Count By Type
-// @Tags Project
-// @Summary Get project count by type
-// @ID project-count-type
-// @Router /api/project/count/type [get]
-// @Accept json
-// @Produce json
-// @Success 200
-// @Security ApiKeyAuth
-func (h *ProjectHandler) countByType(c echo.Context) error {
-	count, err := h.projectRepo.CountTypeProject()
-	if err != nil {
-		if errors.Is(err, mongo.ErrNoDocuments) {
-			return echo.NewHTTPError(http.StatusBadRequest, "Project not found")
-		}
-		return err
-	}
-	return c.JSON(http.StatusOK, count)
-}
-
-// List Project By User
-// @Tags Project
-// @Summary Get list of project by user
-// @ID list-project-user
-// @Router /api/project/user/{id} [get]
-// @Accept json
-// @Produce json
-// @Param id path string true "User ID"
-// @Success 200
-// @Security ApiKeyAuth
-func (h *ProjectHandler) listByUser(c echo.Context) error {
-	id := c.Param("id")
-
-	OId, err := primitive.ObjectIDFromHex(id)
-	if err != nil {
-		return echo.NewHTTPError(http.StatusBadRequest, "Invalid user ID.")
-	}
-
-	projects, err := h.projectRepo.FindAllByContributorID(OId)
-	if err != nil {
-		if errors.Is(err, mongo.ErrNoDocuments) {
-			return echo.NewHTTPError(http.StatusBadRequest, "Project not found")
-		}
-		return err
-	}
-	return c.JSON(http.StatusOK, projects)
 }
 
 // Create Project
@@ -269,11 +176,13 @@ func (h *ProjectHandler) create(c echo.Context) error {
 
 	logo, err := file.GetFileThenUpload(c, "logo", config.AWS.ProjectLogoDir)
 	if err != nil && !errors.Is(err, http.ErrMissingFile) {
-		return err
+		log.Errorf("Failed to upload logo: %v", err)
+		return echo.NewHTTPError(http.StatusInternalServerError, "There was an error, please try again")
 	}
 	attachments, err := file.GetFilesThenUpload(c, "attachments", config.AWS.FileDir)
 	if err != nil && !errors.Is(err, http.ErrMissingFile) {
-		return err
+		log.Errorf("Failed to upload attachments: %v", err)
+		return echo.NewHTTPError(http.StatusInternalServerError, "There was an error, please try again")
 	}
 
 	project := repository.Project{
@@ -293,7 +202,8 @@ func (h *ProjectHandler) create(c echo.Context) error {
 
 	doc, err := h.projectRepo.InsertOne(&project)
 	if err != nil {
-		return echo.NewHTTPError(http.StatusBadRequest, "Failed to create project.")
+		log.Errorf("Failed to create project: %v", err)
+		return echo.NewHTTPError(http.StatusInternalServerError, "There was an error, please try again")
 	}
 	return c.JSON(http.StatusOK, doc)
 }
@@ -311,27 +221,30 @@ func (h *ProjectHandler) create(c echo.Context) error {
 func (h *ProjectHandler) delete(c echo.Context) error {
 	id := c.Param("id")
 
-	OId, err := primitive.ObjectIDFromHex(id)
+	oId, err := primitive.ObjectIDFromHex(id)
 	if err != nil {
 		return echo.NewHTTPError(http.StatusBadRequest, "Invalid project ID.")
 	}
 
-	project, err := h.projectRepo.FindOneByID(OId)
+	project, err := h.projectRepo.FindOneByID(oId)
 	if err != nil {
 		if errors.Is(err, mongo.ErrNoDocuments) {
 			return echo.NewHTTPError(http.StatusBadRequest, "Project not found")
 		}
-		return err
+		log.Errorf("Error finding project: %v", err)
+		return echo.NewHTTPError(http.StatusInternalServerError, "There was an error, please try again")
 	}
 
 	err = h.projectRepo.DeleteOneByID(project.ID)
 	if err != nil {
-		return echo.NewHTTPError(http.StatusBadRequest, "Failed to delete project.")
+		log.Errorf("Failed to delete project: %v", err)
+		return echo.NewHTTPError(http.StatusBadRequest, "There was an error, please try again")
 	}
 
 	err = h.taskRepo.DeleteAllByProjectID(project.ID)
 	if err != nil {
-		return echo.NewHTTPError(http.StatusBadRequest, "Failed to delete project.")
+		log.Errorf("Failed to delete project: %v", err)
+		return echo.NewHTTPError(http.StatusBadRequest, "There was an error, please try again")
 	}
 	return c.JSON(http.StatusOK, "Project deleted.")
 }

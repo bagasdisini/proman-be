@@ -10,6 +10,7 @@ import (
 	"proman-backend/api/repository"
 	_const "proman-backend/pkg/const"
 	"proman-backend/pkg/context"
+	"proman-backend/pkg/log"
 	"proman-backend/pkg/mail"
 	"proman-backend/pkg/util"
 	"strings"
@@ -24,6 +25,7 @@ type loginForm struct {
 func newLoginForm(c echo.Context) (*loginForm, error) {
 	form := new(loginForm)
 	if err := c.Bind(form); err != nil {
+		log.Errorf("Error binding form: %v", err)
 		return nil, echo.NewHTTPError(http.StatusBadRequest, "Invalid email or password")
 	}
 
@@ -52,6 +54,7 @@ type registerForm struct {
 func newRegisterForm(c echo.Context) (*registerForm, error) {
 	form := new(registerForm)
 	if err := c.Bind(form); err != nil {
+		log.Errorf("Error binding form: %v", err)
 		return nil, echo.NewHTTPError(http.StatusBadRequest, "Invalid email or password")
 	}
 
@@ -86,6 +89,7 @@ type forgotPasswordForm struct {
 func newForgotPasswordForm(c echo.Context) (*forgotPasswordForm, error) {
 	form := new(forgotPasswordForm)
 	if err := c.Bind(form); err != nil {
+		log.Errorf("Error binding form: %v", err)
 		return nil, echo.NewHTTPError(http.StatusBadRequest, "Invalid email")
 	}
 
@@ -137,7 +141,8 @@ func (h *AuthHandler) login(c echo.Context) error {
 		if errors.Is(err, mongo.ErrNoDocuments) {
 			return echo.NewHTTPError(http.StatusBadRequest, "Wrong username/email or password")
 		}
-		return echo.NewHTTPError(http.StatusInternalServerError, "There was an error when finding user")
+		log.Errorf("Error finding user: %v", err)
+		return echo.NewHTTPError(http.StatusInternalServerError, "There was an error, please try again")
 	}
 
 	if !util.CheckPassword(u.Password, form.Password) {
@@ -146,7 +151,8 @@ func (h *AuthHandler) login(c echo.Context) error {
 
 	accessToken, err := context.MakeToken(u)
 	if err != nil {
-		return echo.NewHTTPError(http.StatusInternalServerError, "There was an error when creating token")
+		log.Errorf("Error creating token: %v", err)
+		return echo.NewHTTPError(http.StatusInternalServerError, "There was an error, please try again")
 	}
 	return c.JSON(http.StatusOK, map[string]string{"token": accessToken})
 }
@@ -168,7 +174,8 @@ func (h *AuthHandler) register(c echo.Context) error {
 
 	u, err := h.userRepo.FindOneByEmail(form.Email)
 	if err != nil && !errors.Is(err, mongo.ErrNoDocuments) {
-		return echo.NewHTTPError(http.StatusInternalServerError, "There was an error when finding user")
+		log.Errorf("Error finding user: %v", err)
+		return echo.NewHTTPError(http.StatusInternalServerError, "There was an error, please try again")
 	}
 
 	if u != nil {
@@ -188,9 +195,9 @@ func (h *AuthHandler) register(c echo.Context) error {
 
 	doc, err := h.userRepo.Insert(user)
 	if err != nil {
-		return echo.NewHTTPError(http.StatusInternalServerError, "There was an error when inserting user")
+		log.Errorf("Error inserting user: %v", err)
+		return echo.NewHTTPError(http.StatusInternalServerError, "There was an error, please try again")
 	}
-
 	return c.JSON(http.StatusOK, doc)
 }
 
@@ -212,9 +219,10 @@ func (h *AuthHandler) forgotPassword(c echo.Context) error {
 	u, err := h.userRepo.FindOneByEmail(form.Email)
 	if err != nil {
 		if errors.Is(err, mongo.ErrNoDocuments) {
-			return echo.NewHTTPError(http.StatusBadRequest, "Email not found")
+			return echo.NewHTTPError(http.StatusNotFound, "Email not found")
 		}
-		return echo.NewHTTPError(http.StatusInternalServerError, "There was an error when finding user")
+		log.Errorf("Error finding user: %v", err)
+		return echo.NewHTTPError(http.StatusInternalServerError, "There was an error, please try again")
 	}
 
 	newPassword := util.RandomString(10)
@@ -222,15 +230,16 @@ func (h *AuthHandler) forgotPassword(c echo.Context) error {
 
 	_, err = h.userRepo.Update(u)
 	if err != nil {
-		return echo.NewHTTPError(http.StatusInternalServerError, "There was an error when updating user")
+		log.Errorf("Error updating user: %v", err)
+		return echo.NewHTTPError(http.StatusInternalServerError, "There was an error, please try again")
 	}
 
 	go func(email string, template string) {
 		err = mail.SendMail(nil, []string{email}, "New Password", template)
 		if err != nil {
+			log.Errorf("Error sending email: %v", err)
 			return
 		}
 	}(u.Email, mail.ForgotTemplate(newPassword))
-
 	return c.JSON(http.StatusOK, map[string]string{"message": "New password has been sent to your email"})
 }

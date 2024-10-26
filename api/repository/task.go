@@ -37,20 +37,16 @@ type CountTaskDetail struct {
 	Cancelled int `json:"cancelled"`
 }
 
-type CountTask struct {
-	Current  CountTaskDetail `json:"current"`
-	LastYear CountTaskDetail `json:"last_year"`
-}
-
 type CountUserActive struct {
 	Total       int `json:"total"`
 	HaveTask    int `json:"have_task"`
 	NotHaveTask int `json:"not_have_task"`
 }
 
-type CountUser struct {
-	Current  CountUserActive `json:"current"`
-	LastYear CountUserActive `json:"last_year"`
+type TaskOverview struct {
+	Start string `json:"start"`
+	End   string `json:"end"`
+	Count int    `json:"count"`
 }
 
 type TaskCollRepository struct {
@@ -133,11 +129,12 @@ func (r *TaskCollRepository) FindAllByUserID(userID primitive.ObjectID) ([]Task,
 	return tasks, nil
 }
 
-func (r *TaskCollRepository) FindAllByStatus(status string) ([]Task, error) {
+func (r *TaskCollRepository) FindAllByStatusByUserID(userID primitive.ObjectID, status string) ([]Task, error) {
 	var tasks []Task
 	filter := bson.M{
-		"status":     status,
-		"is_deleted": bson.M{"$ne": true},
+		"contributor": bson.M{"$in": []primitive.ObjectID{userID}},
+		"status":      status,
+		"is_deleted":  bson.M{"$ne": true},
 	}
 
 	cursor, err := r.coll.Find(context.TODO(), filter)
@@ -169,13 +166,22 @@ func (r *TaskCollRepository) CreateOne(task *Task) error {
 	return nil
 }
 
-func (r *TaskCollRepository) CountTask(start, end time.Time) (*[]CountTaskDetail, error) {
+func (r *TaskCollRepository) CountTaskByUserID(userId primitive.ObjectID, start, end time.Time) (*[]CountTaskDetail, error) {
 	var count []CountTaskDetail
 	match := bson.D{
 		{"$match", bson.D{
+			{"contributor", userId},
 			{"is_deleted", bson.M{"$ne": true}},
-			{"start_date", bson.M{"$gt": start}},
-			{"end_date", bson.M{"$lt": end}},
+			{"$or", bson.A{
+				bson.D{
+					{"start_date", bson.M{"$lt": end}},
+					{"end_date", bson.M{"$gte": start}},
+				},
+				bson.D{
+					{"start_date", bson.M{"$gte": start}},
+					{"start_date", bson.M{"$lt": end}},
+				},
+			}},
 		}},
 	}
 	group := bson.D{
@@ -199,14 +205,12 @@ func (r *TaskCollRepository) CountTask(start, end time.Time) (*[]CountTaskDetail
 	return &count, nil
 }
 
-func (r *TaskCollRepository) CountUserThatHaveTask(userRepo *UserCollRepository, start, end time.Time) (*CountUserActive, error) {
+func (r *TaskCollRepository) CountUserThatHaveTask(userRepo *UserCollRepository) (*CountUserActive, error) {
 	result := &CountUserActive{}
 
 	taskPipeline := mongo.Pipeline{
 		{{"$match", bson.D{
 			{"status", bson.M{"$in": bson.A{_const.TaskActive, _const.TaskTesting}}},
-			{"start_date", bson.M{"$gt": start}},
-			{"end_date", bson.M{"$lt": end}},
 		}}},
 		{{"$group", bson.D{
 			{"_id", "$contributor"},

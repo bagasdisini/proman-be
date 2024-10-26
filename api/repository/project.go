@@ -90,80 +90,255 @@ func NewProjectRepository(db *mongo.Database) *ProjectCollRepository {
 	}
 }
 
-func (r *ProjectCollRepository) FindAll(taskRepo *TaskCollRepository) (*[]Project, error) {
+func (r *ProjectCollRepository) FindAll() (*[]Project, error) {
 	var projects []Project
-	filter := bson.M{"is_deleted": bson.M{"$ne": true}}
 
-	cursor, err := r.coll.Find(context.Background(), filter)
+	pipeline := []bson.M{
+		{
+			"$match": bson.M{
+				"is_deleted": bson.M{"$ne": true},
+			},
+		},
+		{
+			"$lookup": bson.M{
+				"from":         "tasks",
+				"localField":   "_id",
+				"foreignField": "project_id",
+				"as":           "tasks",
+			},
+		},
+		{
+			"$addFields": bson.M{
+				"task_count": bson.M{
+					"active": bson.M{
+						"$size": bson.M{
+							"$filter": bson.M{
+								"input": "$tasks",
+								"as":    "task",
+								"cond":  bson.M{"$eq": []interface{}{"$$task.status", _const.TaskActive}},
+							},
+						},
+					},
+					"testing": bson.M{
+						"$size": bson.M{
+							"$filter": bson.M{
+								"input": "$tasks",
+								"as":    "task",
+								"cond":  bson.M{"$eq": []interface{}{"$$task.status", _const.TaskTesting}},
+							},
+						},
+					},
+					"completed": bson.M{
+						"$size": bson.M{
+							"$filter": bson.M{
+								"input": "$tasks",
+								"as":    "task",
+								"cond":  bson.M{"$eq": []interface{}{"$$task.status", _const.TaskCompleted}},
+							},
+						},
+					},
+					"cancelled": bson.M{
+						"$size": bson.M{
+							"$filter": bson.M{
+								"input": "$tasks",
+								"as":    "task",
+								"cond":  bson.M{"$eq": []interface{}{"$$task.status", _const.TaskCancelled}},
+							},
+						},
+					},
+					"total": bson.M{"$size": "$tasks"},
+				},
+			},
+		},
+		{
+			"$project": bson.M{
+				"tasks": 0,
+			},
+		},
+	}
+
+	cursor, err := r.coll.Aggregate(context.TODO(), pipeline)
 	if err != nil {
 		return nil, err
 	}
+	defer cursor.Close(context.TODO())
 
-	if err = cursor.All(context.Background(), &projects); err != nil {
+	if err = cursor.All(context.TODO(), &projects); err != nil {
 		return nil, err
 	}
+	return &projects, nil
+}
 
-	for i, project := range projects {
-		count, err := taskRepo.FindAllByProjectID(project.ID)
-		if err != nil {
-			return nil, err
-		}
+func (r *ProjectCollRepository) FindAllByContributorID(_id primitive.ObjectID) (*[]Project, error) {
+	var projects []Project
 
-		for _, c := range count {
-			if c.Status == _const.TaskActive {
-				projects[i].TaskCount.Active++
-			} else if c.Status == _const.TaskTesting {
-				projects[i].TaskCount.Testing++
-			} else if c.Status == _const.TaskCompleted {
-				projects[i].TaskCount.Completed++
-			} else if c.Status == _const.TaskCancelled {
-				projects[i].TaskCount.Cancelled++
-			}
-			projects[i].TaskCount.Total++
-		}
+	pipeline := []bson.M{
+		{
+			"$match": bson.M{
+				"is_deleted":  bson.M{"$ne": true},
+				"contributor": _id,
+			},
+		},
+		{
+			"$lookup": bson.M{
+				"from":         "tasks",
+				"localField":   "_id",
+				"foreignField": "project_id",
+				"as":           "tasks",
+			},
+		},
+		{
+			"$addFields": bson.M{
+				"task_count": bson.M{
+					"active": bson.M{
+						"$size": bson.M{
+							"$filter": bson.M{
+								"input": "$tasks",
+								"as":    "task",
+								"cond":  bson.M{"$eq": []interface{}{"$$task.status", _const.TaskActive}},
+							},
+						},
+					},
+					"testing": bson.M{
+						"$size": bson.M{
+							"$filter": bson.M{
+								"input": "$tasks",
+								"as":    "task",
+								"cond":  bson.M{"$eq": []interface{}{"$$task.status", _const.TaskTesting}},
+							},
+						},
+					},
+					"completed": bson.M{
+						"$size": bson.M{
+							"$filter": bson.M{
+								"input": "$tasks",
+								"as":    "task",
+								"cond":  bson.M{"$eq": []interface{}{"$$task.status", _const.TaskCompleted}},
+							},
+						},
+					},
+					"cancelled": bson.M{
+						"$size": bson.M{
+							"$filter": bson.M{
+								"input": "$tasks",
+								"as":    "task",
+								"cond":  bson.M{"$eq": []interface{}{"$$task.status", _const.TaskCancelled}},
+							},
+						},
+					},
+					"total": bson.M{"$size": "$tasks"},
+				},
+			},
+		},
+		{
+			"$project": bson.M{
+				"tasks": 0,
+			},
+		},
+	}
+
+	cursor, err := r.coll.Aggregate(context.TODO(), pipeline)
+	if err != nil {
+		return nil, err
+	}
+	defer cursor.Close(context.TODO())
+
+	if err = cursor.All(context.TODO(), &projects); err != nil {
+		return nil, err
 	}
 	return &projects, nil
 }
 
 func (r *ProjectCollRepository) FindOneByID(_id primitive.ObjectID) (*Project, error) {
-	var user *Project
-	filter := bson.M{
-		"_id":        _id,
-		"is_deleted": bson.M{"$ne": true},
+	var project Project
+
+	pipeline := []bson.M{
+		{
+			"$match": bson.M{
+				"_id":        _id,
+				"is_deleted": bson.M{"$ne": true},
+			},
+		},
+		{
+			"$lookup": bson.M{
+				"from":         "tasks",
+				"localField":   "_id",
+				"foreignField": "project_id",
+				"as":           "tasks",
+			},
+		},
+		{
+			"$addFields": bson.M{
+				"task_count": bson.M{
+					"active": bson.M{
+						"$size": bson.M{
+							"$filter": bson.M{
+								"input": "$tasks",
+								"as":    "task",
+								"cond":  bson.M{"$eq": []interface{}{"$$task.status", _const.TaskActive}},
+							},
+						},
+					},
+					"testing": bson.M{
+						"$size": bson.M{
+							"$filter": bson.M{
+								"input": "$tasks",
+								"as":    "task",
+								"cond":  bson.M{"$eq": []interface{}{"$$task.status", _const.TaskTesting}},
+							},
+						},
+					},
+					"completed": bson.M{
+						"$size": bson.M{
+							"$filter": bson.M{
+								"input": "$tasks",
+								"as":    "task",
+								"cond":  bson.M{"$eq": []interface{}{"$$task.status", _const.TaskCompleted}},
+							},
+						},
+					},
+					"cancelled": bson.M{
+						"$size": bson.M{
+							"$filter": bson.M{
+								"input": "$tasks",
+								"as":    "task",
+								"cond":  bson.M{"$eq": []interface{}{"$$task.status", _const.TaskCancelled}},
+							},
+						},
+					},
+					"total": bson.M{"$size": "$tasks"},
+				},
+			},
+		},
+		{
+			"$project": bson.M{
+				"tasks": 0,
+			},
+		},
 	}
 
-	err := r.coll.FindOne(context.TODO(), filter).Decode(&user)
+	cursor, err := r.coll.Aggregate(context.TODO(), pipeline)
 	if err != nil {
 		return nil, err
 	}
-	return user, nil
+	defer cursor.Close(context.TODO())
+
+	if cursor.Next(context.TODO()) {
+		if err := cursor.Decode(&project); err != nil {
+			return nil, err
+		}
+	} else {
+		return nil, mongo.ErrNoDocuments
+	}
+	return &project, nil
 }
 
-func (r *ProjectCollRepository) FindAllByContributorID(_id primitive.ObjectID) (*[]Project, error) {
-	var projects []Project
-	filter := bson.M{
-		"contributor": _id,
-		"is_deleted":  bson.M{"$ne": true},
-	}
-
-	cursor, err := r.coll.Find(context.Background(), filter)
-	if err != nil {
-		return nil, err
-	}
-
-	if err = cursor.All(context.Background(), &projects); err != nil {
-		return nil, err
-	}
-	return &projects, nil
-}
-
-func (r *ProjectCollRepository) CountProject(start, end time.Time) (*[]CountProjectDetail, error) {
+func (r *ProjectCollRepository) CountProjectByUser(id primitive.ObjectID) (*[]CountProjectDetail, error) {
 	var count []CountProjectDetail
 	match := bson.D{
 		{"$match", bson.D{
+			{"contributor", id},
 			{"is_deleted", bson.M{"$ne": true}},
-			{"start_date", bson.M{"$gt": start}},
-			{"end_date", bson.M{"$lt": end}},
 		}},
 	}
 	group := bson.D{
@@ -187,10 +362,11 @@ func (r *ProjectCollRepository) CountProject(start, end time.Time) (*[]CountProj
 	return &count, nil
 }
 
-func (r *ProjectCollRepository) CountTypeProject() (*[]CountTypeProject, error) {
+func (r *ProjectCollRepository) CountProjectTypesByUser(id primitive.ObjectID) (*[]CountTypeProject, error) {
 	var count []CountTypeProject
 	match := bson.D{
 		{"$match", bson.D{
+			{"contributor", id},
 			{"is_deleted", bson.M{"$ne": true}},
 			{"status", _const.ProjectActive},
 		}},
@@ -211,38 +387,6 @@ func (r *ProjectCollRepository) CountTypeProject() (*[]CountTypeProject, error) 
 		return nil, err
 	}
 	return &count, nil
-}
-
-func (r *ProjectCollRepository) CountProjectsForUser(userID primitive.ObjectID) (int, error) {
-	pipeline := mongo.Pipeline{
-		{{"$match", bson.D{
-			{"is_deleted", false},
-			{"contributor", userID},
-		}}},
-		{{"$count", "total"}},
-	}
-
-	cursor, err := r.coll.Aggregate(context.TODO(), pipeline)
-	if err != nil {
-		return 0, err
-	}
-	defer func(cursor *mongo.Cursor, ctx context.Context) {
-		err := cursor.Close(ctx)
-		if err != nil {
-			return
-		}
-	}(cursor, context.TODO())
-
-	var result struct {
-		Total int `bson:"total"`
-	}
-	if cursor.Next(context.TODO()) {
-		if err := cursor.Decode(&result); err != nil {
-			return 0, err
-		}
-		return result.Total, nil
-	}
-	return 0, nil
 }
 
 func (r *ProjectCollRepository) InsertOne(projectData *Project) (*Project, error) {

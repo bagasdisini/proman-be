@@ -1,7 +1,6 @@
 package handler
 
 import (
-	"errors"
 	"github.com/labstack/echo/v4"
 	"go.mongodb.org/mongo-driver/bson/primitive"
 	"go.mongodb.org/mongo-driver/mongo"
@@ -9,6 +8,7 @@ import (
 	"proman-backend/api/repository"
 	_const "proman-backend/pkg/const"
 	"proman-backend/pkg/context"
+	"proman-backend/pkg/log"
 	"strings"
 	"time"
 )
@@ -25,6 +25,7 @@ type taskForm struct {
 func newTaskForm(c echo.Context) (*taskForm, error) {
 	form := taskForm{}
 	if err := c.Bind(&form); err != nil {
+		log.Errorf("Error binding task form: %v", err)
 		return nil, echo.NewHTTPError(http.StatusBadRequest, "Invalid data format.")
 	}
 
@@ -66,109 +67,11 @@ func NewTaskHandler(e *echo.Echo, db *mongo.Database) *TaskHandler {
 
 	task := e.Group("/api", context.ContextHandler)
 
-	task.GET("/task/count", h.taskCount)
-	task.GET("/task/status", h.taskListByStatus)
-
 	task.POST("/task", h.create)
 
 	task.DELETE("/task/:id", h.delete)
 
 	return h
-}
-
-// Task Count
-// @Tags Task
-// @Summary Get task count
-// @ID task-count
-// @Router /api/task/count [get]
-// @Accept json
-// @Produce json
-// @Success 200
-// @Security ApiKeyAuth
-func (h *TaskHandler) taskCount(c echo.Context) error {
-	currentEnd := time.Date(time.Now().Year(), 12, 31, 23, 59, 59, 0, time.Local)
-	currentStart := time.Date(time.Now().Year(), 1, 1, 0, 0, 0, 0, time.Local)
-	current, err := h.taskRepo.CountTask(currentStart, currentEnd)
-	if err != nil {
-		if errors.Is(err, mongo.ErrNoDocuments) {
-			return echo.NewHTTPError(http.StatusBadRequest, "Task not found")
-		}
-		return err
-	}
-
-	prevEnd := currentStart.AddDate(0, 0, -1)
-	prevStart := time.Date(prevEnd.Year(), prevEnd.Month(), 1, 0, 0, 0, 0, time.Local)
-	previous, err := h.taskRepo.CountTask(prevStart, prevEnd)
-	if err != nil {
-		if errors.Is(err, mongo.ErrNoDocuments) {
-			return echo.NewHTTPError(http.StatusBadRequest, "Task not found")
-		}
-		return err
-	}
-
-	docs := repository.CountTask{}
-	if len(*current) > 0 {
-		docs.Current = (*current)[0]
-	} else {
-		docs.Current = repository.CountTaskDetail{}
-	}
-	if len(*previous) > 0 {
-		docs.LastYear = (*previous)[0]
-	} else {
-		docs.LastYear = repository.CountTaskDetail{}
-	}
-	return c.JSON(http.StatusOK, docs)
-}
-
-// Task List By Status
-// @Tags Task
-// @Summary Get task list by status
-// @ID task-list-status
-// @Router /api/task/status [get]
-// @Accept json
-// @Produce json
-// @Success 200
-// @Security ApiKeyAuth
-func (h *TaskHandler) taskListByStatus(c echo.Context) error {
-	active, err := h.taskRepo.FindAllByStatus(_const.TaskActive)
-	if err != nil {
-		if errors.Is(err, mongo.ErrNoDocuments) {
-			return echo.NewHTTPError(http.StatusBadRequest, "Task not found")
-		}
-		return err
-	}
-
-	testing, err := h.taskRepo.FindAllByStatus(_const.TaskTesting)
-	if err != nil {
-		if errors.Is(err, mongo.ErrNoDocuments) {
-			return echo.NewHTTPError(http.StatusBadRequest, "Task not found")
-		}
-		return err
-	}
-
-	completed, err := h.taskRepo.FindAllByStatus(_const.TaskCompleted)
-	if err != nil {
-		if errors.Is(err, mongo.ErrNoDocuments) {
-			return echo.NewHTTPError(http.StatusBadRequest, "Task not found")
-		}
-		return err
-	}
-
-	cancelled, err := h.taskRepo.FindAllByStatus(_const.TaskCancelled)
-	if err != nil {
-		if errors.Is(err, mongo.ErrNoDocuments) {
-			return echo.NewHTTPError(http.StatusBadRequest, "Task not found")
-		}
-		return err
-	}
-
-	docs := repository.TaskGroup{
-		Active:    active,
-		Testing:   testing,
-		Completed: completed,
-		Cancelled: cancelled,
-	}
-	return c.JSON(http.StatusOK, docs)
 }
 
 // Create Task
@@ -216,7 +119,8 @@ func (h *TaskHandler) create(c echo.Context) error {
 
 	err = h.taskRepo.CreateOne(&task)
 	if err != nil {
-		return err
+		log.Errorf("Failed to create task: %v", err)
+		return echo.NewHTTPError(http.StatusInternalServerError, "There was an error, please try again")
 	}
 	return c.JSON(http.StatusOK, task)
 }
@@ -244,7 +148,8 @@ func (h *TaskHandler) delete(c echo.Context) error {
 
 	err = h.taskRepo.DeleteOneByID(objectID)
 	if err != nil {
-		return err
+		log.Errorf("Failed to delete task: %v", err)
+		return echo.NewHTTPError(http.StatusInternalServerError, "There was an error, please try again")
 	}
 	return c.JSON(http.StatusOK, "Task deleted")
 }
