@@ -9,6 +9,7 @@ import (
 	_const "proman-backend/pkg/const"
 	"proman-backend/pkg/context"
 	"proman-backend/pkg/log"
+	_mongo "proman-backend/pkg/mongo"
 	"proman-backend/pkg/util"
 )
 
@@ -107,6 +108,13 @@ func (h *MeHandler) mySchedule(c echo.Context) error {
 // @Summary Get my projects
 // @ID my-projects
 // @Router /api/me/projects [get]
+// @Param q query string false "Search by nama or description"
+// @Param status query string false "Search by status" Enums(active, completed, pending, cancelled)
+// @Param start query string false "Start date"
+// @Param end query string false "End date"
+// @Param sort query string false "Sort" enums(asc,desc)
+// @Param page query int false "Page number pagination"
+// @Param limit query int false "Limit pagination"
 // @Accept json
 // @Produce json
 // @Success 200
@@ -125,7 +133,19 @@ func (h *MeHandler) myProjects(c echo.Context) error {
 		log.Errorf("Error finding project: %v", err)
 		return echo.NewHTTPError(http.StatusInternalServerError, "There was an error, please try again")
 	}
-	return c.JSON(http.StatusOK, projects)
+
+	cq.ResetDate()
+	totalProjects, err := h.projectRepo.CountProject(cq)
+	if err != nil {
+		if errors.Is(err, mongo.ErrNoDocuments) {
+			return echo.NewHTTPError(http.StatusNotFound, "Project not found")
+		}
+		log.Errorf("Error counting project: %v", err)
+		return echo.NewHTTPError(http.StatusInternalServerError, "There was an error, please try again")
+	}
+
+	result := _mongo.MakeResult(projects, int64(totalProjects.Total), cq.Page, cq.Limit)
+	return c.JSON(http.StatusOK, result)
 }
 
 // My Project Count

@@ -2,7 +2,6 @@ package util
 
 import (
 	"math/rand"
-	"strings"
 	"time"
 	"unsafe"
 )
@@ -27,9 +26,4 @@ func RandomString(n int) string {
 		remain--
 	}
 	return *(*string)(unsafe.Pointer(&b))
-}
-
-func RefineString(str *string) {
-	*str = strings.TrimSpace(*str)
-	*str = strings.ToLower(*str)
 }

@@ -8,13 +8,13 @@ import (
 
 type PaginationResult struct {
 	Result interface{} `json:"result"`
-	Total  int         `json:"total"`
-	Pages  int         `json:"pages"`
-	Page   int         `json:"page"`
-	Limit  int         `json:"limit"`
+	Total  int64       `json:"total"`
+	Page   int64       `json:"page"`
+	Pages  int64       `json:"pages"`
+	Limit  int64       `json:"limit"`
 }
 
-func BuildPaginateOrderOptionByField(sortParam bson.D, page, limit int) (*options.FindOptions, error) {
+func BuildPaginateOrderOptionByField(sortParam bson.D, page, limit int64) (*options.FindOptions, error) {
 	if page <= 0 {
 		page = 1
 	}
@@ -26,14 +26,34 @@ func BuildPaginateOrderOptionByField(sortParam bson.D, page, limit int) (*option
 	skipped := (page - 1) * limit
 	findOptions := options.Find()
 	findOptions.SetSort(sortParam)
-	findOptions.SetSkip(int64(skipped))
-	findOptions.SetLimit(int64(limit))
+	findOptions.SetSkip(skipped)
+	findOptions.SetLimit(limit)
 
 	return findOptions, nil
 }
 
-func CalculateTotalPages(totalData, limit, page int) (int, bool) {
-	totalPages := int(math.Ceil(float64(totalData) / float64(limit)))
-	pageOutOfRange := page > totalPages && totalPages != 0
-	return totalPages, pageOutOfRange
+func calculateTotalPages(totalData, limit, page int64) (int64, bool) {
+	return int64(math.Ceil(float64(totalData) / float64(limit))),
+		page > int64(math.Ceil(float64(totalData)/float64(limit))) && int(math.Ceil(float64(totalData)/float64(limit))) != 0
+}
+
+func MakeResult(data interface{}, totalData int64, page, limit int64) *PaginationResult {
+	totalPages, pageOutOfRange := calculateTotalPages(totalData, limit, page)
+	if pageOutOfRange {
+		return &PaginationResult{
+			Result: nil,
+			Total:  totalData,
+			Pages:  totalPages,
+			Page:   page,
+			Limit:  limit,
+		}
+	}
+
+	return &PaginationResult{
+		Result: data,
+		Total:  totalData,
+		Pages:  totalPages,
+		Page:   page,
+		Limit:  limit,
+	}
 }

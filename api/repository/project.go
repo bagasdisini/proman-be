@@ -130,6 +130,9 @@ func (r *ProjectCollRepository) FindAll(cq *util.CommonQuery) (*[]Project, error
 		}
 	}
 
+	skip := (cq.Page - 1) * cq.Limit
+	limit := cq.Limit
+
 	pipeline := []bson.M{
 		{
 			"$match": matchStage,
@@ -189,6 +192,15 @@ func (r *ProjectCollRepository) FindAll(cq *util.CommonQuery) (*[]Project, error
 			"$project": bson.M{
 				"tasks": 0,
 			},
+		},
+		{
+			"$sort": bson.D{{"_id", cq.Sort}},
+		},
+		{
+			"$skip": skip,
+		},
+		{
+			"$limit": limit,
 		},
 	}
 
