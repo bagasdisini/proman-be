@@ -12,6 +12,7 @@ import (
 	"proman-backend/pkg/context"
 	"proman-backend/pkg/file"
 	"proman-backend/pkg/log"
+	"proman-backend/pkg/util"
 	"strings"
 	"time"
 )
@@ -93,7 +94,9 @@ func NewProjectHandler(e *echo.Echo, db *mongo.Database) *ProjectHandler {
 // @Success 200
 // @Security ApiKeyAuth
 func (h *ProjectHandler) list(c echo.Context) error {
-	projects, err := h.projectRepo.FindAll()
+	cq := util.NewCommonQuery(c)
+
+	projects, err := h.projectRepo.FindAll(cq)
 	if err != nil {
 		if errors.Is(err, mongo.ErrNoDocuments) {
 			return echo.NewHTTPError(http.StatusBadRequest, "Project not found")

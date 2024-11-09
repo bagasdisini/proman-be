@@ -1,14 +1,21 @@
 package config
 
 import (
+	"fmt"
 	"github.com/joho/godotenv"
-	"proman-backend/pkg/log"
+	"os"
+	"path"
 )
 
-func InitConfig(filepath string) {
-	err := godotenv.Load(filepath)
+func init() {
+	dir, err := os.Getwd()
 	if err != nil {
-		log.Info(".env file not found, using environment variables instead.")
+		panic(err)
+	}
+	filepath := path.Join(dir, ".env")
+	err = godotenv.Load(filepath)
+	if err != nil {
+		fmt.Println(".env file not found, using environment variables instead.")
 	}
 
 	initApp()

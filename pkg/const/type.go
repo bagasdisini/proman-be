@@ -8,6 +8,14 @@ const (
 	ProjectCancelled = "cancelled"
 )
 
+func IsValidProjectStatus(projectStatus string) bool {
+	switch projectStatus {
+	case ProjectActive, ProjectCompleted, ProjectPending, ProjectCancelled:
+		return true
+	}
+	return false
+}
+
 // Schedule type
 const (
 	ScheduleMeeting      = "meeting"
@@ -33,6 +41,14 @@ const (
 	TaskCancelled = "cancelled"
 )
 
+func IsValidTaskStatus(taskStatus string) bool {
+	switch taskStatus {
+	case TaskActive, TaskTesting, TaskCompleted, TaskCancelled:
+		return true
+	}
+	return false
+}
+
 var AllowedFileExtension = map[string]bool{
 	"image/jpeg":      true,
 	"image/jpg":       true,
@@ -43,4 +59,8 @@ var AllowedFileExtension = map[string]bool{
 	"image/svg":       true,
 	"txt/plain":       true,
 	"application/pdf": true,
+}
+
+func IsValidFileExtension(fileType string) bool {
+	return AllowedFileExtension[fileType]
 }

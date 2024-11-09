@@ -8,6 +8,7 @@ import (
 	"go.mongodb.org/mongo-driver/mongo"
 	"proman-backend/internal/config"
 	_const "proman-backend/pkg/const"
+	"proman-backend/pkg/util"
 	"strings"
 	"time"
 )
@@ -70,11 +71,6 @@ type CountProjectDetail struct {
 	Cancelled int `json:"cancelled"`
 }
 
-type CountProject struct {
-	Current  CountProjectDetail `json:"current"`
-	LastYear CountProjectDetail `json:"last_year"`
-}
-
 type CountTypeProject struct {
 	Type  string `json:"type"`
 	Total int    `json:"total"`
@@ -90,14 +86,53 @@ func NewProjectRepository(db *mongo.Database) *ProjectCollRepository {
 	}
 }
 
-func (r *ProjectCollRepository) FindAll() (*[]Project, error) {
+func (r *ProjectCollRepository) FindAll(cq *util.CommonQuery) (*[]Project, error) {
 	var projects []Project
+
+	matchStage := bson.M{"is_deleted": bson.M{"$ne": true}}
+
+	if len(cq.Q) > 0 {
+		matchStage["$or"] = []bson.M{
+			{"name": bson.M{"$regex": primitive.Regex{Pattern: cq.Q, Options: "i"}}},
+			{"description": bson.M{"$regex": primitive.Regex{Pattern: cq.Q, Options: "i"}}},
+		}
+	}
+
+	if len(cq.Status) > 0 && _const.IsValidProjectStatus(cq.Status) {
+		matchStage["status"] = cq.Status
+	}
+
+	if cq.UserId != primitive.NilObjectID {
+		matchStage["contributor"] = cq.UserId
+	}
+
+	if existingOr, ok := matchStage["$or"]; ok {
+		matchStage["$or"] = append(existingOr.([]bson.M), bson.M{
+			"$or": []bson.M{
+				{
+					"start_date": bson.M{"$lt": cq.End},
+					"end_date":   bson.M{"$gte": cq.Start},
+				},
+				{
+					"start_date": bson.M{"$gte": cq.Start, "$lt": cq.End},
+				},
+			},
+		})
+	} else {
+		matchStage["$or"] = []bson.M{
+			{
+				"start_date": bson.M{"$lt": cq.End},
+				"end_date":   bson.M{"$gte": cq.Start},
+			},
+			{
+				"start_date": bson.M{"$gte": cq.Start, "$lt": cq.End},
+			},
+		}
+	}
 
 	pipeline := []bson.M{
 		{
-			"$match": bson.M{
-				"is_deleted": bson.M{"$ne": true},
-			},
+			"$match": matchStage,
 		},
 		{
 			"$lookup": bson.M{
@@ -161,87 +196,6 @@ func (r *ProjectCollRepository) FindAll() (*[]Project, error) {
 	if err != nil {
 		return nil, err
 	}
-	defer cursor.Close(context.TODO())
-
-	if err = cursor.All(context.TODO(), &projects); err != nil {
-		return nil, err
-	}
-	return &projects, nil
-}
-
-func (r *ProjectCollRepository) FindAllByContributorID(_id primitive.ObjectID) (*[]Project, error) {
-	var projects []Project
-
-	pipeline := []bson.M{
-		{
-			"$match": bson.M{
-				"is_deleted":  bson.M{"$ne": true},
-				"contributor": _id,
-			},
-		},
-		{
-			"$lookup": bson.M{
-				"from":         "tasks",
-				"localField":   "_id",
-				"foreignField": "project_id",
-				"as":           "tasks",
-			},
-		},
-		{
-			"$addFields": bson.M{
-				"task_count": bson.M{
-					"active": bson.M{
-						"$size": bson.M{
-							"$filter": bson.M{
-								"input": "$tasks",
-								"as":    "task",
-								"cond":  bson.M{"$eq": []interface{}{"$$task.status", _const.TaskActive}},
-							},
-						},
-					},
-					"testing": bson.M{
-						"$size": bson.M{
-							"$filter": bson.M{
-								"input": "$tasks",
-								"as":    "task",
-								"cond":  bson.M{"$eq": []interface{}{"$$task.status", _const.TaskTesting}},
-							},
-						},
-					},
-					"completed": bson.M{
-						"$size": bson.M{
-							"$filter": bson.M{
-								"input": "$tasks",
-								"as":    "task",
-								"cond":  bson.M{"$eq": []interface{}{"$$task.status", _const.TaskCompleted}},
-							},
-						},
-					},
-					"cancelled": bson.M{
-						"$size": bson.M{
-							"$filter": bson.M{
-								"input": "$tasks",
-								"as":    "task",
-								"cond":  bson.M{"$eq": []interface{}{"$$task.status", _const.TaskCancelled}},
-							},
-						},
-					},
-					"total": bson.M{"$size": "$tasks"},
-				},
-			},
-		},
-		{
-			"$project": bson.M{
-				"tasks": 0,
-			},
-		},
-	}
-
-	cursor, err := r.coll.Aggregate(context.TODO(), pipeline)
-	if err != nil {
-		return nil, err
-	}
-	defer cursor.Close(context.TODO())
 
 	if err = cursor.All(context.TODO(), &projects); err != nil {
 		return nil, err
@@ -321,7 +275,6 @@ func (r *ProjectCollRepository) FindOneByID(_id primitive.ObjectID) (*Project, e
 	if err != nil {
 		return nil, err
 	}
-	defer cursor.Close(context.TODO())
 
 	if cursor.Next(context.TODO()) {
 		if err := cursor.Decode(&project); err != nil {
@@ -333,14 +286,44 @@ func (r *ProjectCollRepository) FindOneByID(_id primitive.ObjectID) (*Project, e
 	return &project, nil
 }
 
-func (r *ProjectCollRepository) CountProjectByUser(id primitive.ObjectID) (*[]CountProjectDetail, error) {
+func (r *ProjectCollRepository) CountProject(cq *util.CommonQuery) (*CountProjectDetail, error) {
 	var count []CountProjectDetail
-	match := bson.D{
-		{"$match", bson.D{
-			{"contributor", id},
-			{"is_deleted", bson.M{"$ne": true}},
-		}},
+
+	matchStage := bson.D{{"is_deleted", bson.M{"$ne": true}}}
+
+	if len(cq.Q) > 0 {
+		matchStage = append(matchStage, bson.E{Key: "$or", Value: bson.A{
+			bson.D{{"name", primitive.Regex{Pattern: cq.Q, Options: "i"}}},
+			bson.D{{"description", primitive.Regex{Pattern: cq.Q, Options: "i"}}},
+		}})
 	}
+
+	if len(cq.Status) > 0 && _const.IsValidProjectStatus(cq.Status) {
+		matchStage = append(matchStage, bson.E{Key: "status", Value: cq.Status})
+	}
+
+	if cq.UserId != primitive.NilObjectID {
+		matchStage = append(matchStage, bson.E{Key: "contributor", Value: cq.UserId})
+	}
+
+	matchStage = append(matchStage, bson.E{
+		Key: "$or",
+		Value: bson.A{
+			bson.D{
+				{"start_date", bson.M{"$lt": cq.End}},
+				{"end_date", bson.M{"$gte": cq.Start}},
+			},
+			bson.D{
+				{"start_date", bson.M{"$gte": cq.Start}},
+				{"start_date", bson.M{"$lt": cq.End}},
+			},
+		},
+	})
+
+	match := bson.D{
+		{"$match", matchStage},
+	}
+
 	group := bson.D{
 		{"$group", bson.D{
 			{"_id", nil},
@@ -352,25 +335,62 @@ func (r *ProjectCollRepository) CountProjectByUser(id primitive.ObjectID) (*[]Co
 		}},
 	}
 
-	cursor, err := r.coll.Aggregate(context.Background(), mongo.Pipeline{match, group})
+	cursor, err := r.coll.Aggregate(context.TODO(), mongo.Pipeline{match, group})
 	if err != nil {
 		return nil, err
 	}
-	if err = cursor.All(context.Background(), &count); err != nil {
+	if err = cursor.All(context.TODO(), &count); err != nil {
 		return nil, err
 	}
-	return &count, nil
+
+	if len(count) > 0 {
+		return &count[0], nil
+	} else {
+		return &CountProjectDetail{}, nil
+	}
 }
 
-func (r *ProjectCollRepository) CountProjectTypesByUser(id primitive.ObjectID) (*[]CountTypeProject, error) {
+func (r *ProjectCollRepository) CountProjectTypes(cq *util.CommonQuery) (*[]CountTypeProject, error) {
 	var count []CountTypeProject
-	match := bson.D{
-		{"$match", bson.D{
-			{"contributor", id},
-			{"is_deleted", bson.M{"$ne": true}},
-			{"status", _const.ProjectActive},
-		}},
+
+	matchStage := bson.D{
+		{"is_deleted", bson.M{"$ne": true}},
+		{"status", bson.M{"$ne": _const.ProjectCancelled}},
 	}
+
+	if len(cq.Q) > 0 {
+		matchStage = append(matchStage, bson.E{Key: "$or", Value: bson.A{
+			bson.D{{"name", primitive.Regex{Pattern: cq.Q, Options: "i"}}},
+			bson.D{{"description", primitive.Regex{Pattern: cq.Q, Options: "i"}}},
+		}})
+	}
+
+	if len(cq.Status) > 0 && _const.IsValidProjectStatus(cq.Status) {
+		matchStage = append(matchStage, bson.E{Key: "status", Value: cq.Status})
+	}
+
+	if cq.UserId != primitive.NilObjectID {
+		matchStage = append(matchStage, bson.E{Key: "contributor", Value: cq.UserId})
+	}
+
+	matchStage = append(matchStage, bson.E{
+		Key: "$or",
+		Value: bson.A{
+			bson.D{
+				{"start_date", bson.M{"$lt": cq.End}},
+				{"end_date", bson.M{"$gte": cq.Start}},
+			},
+			bson.D{
+				{"start_date", bson.M{"$gte": cq.Start}},
+				{"start_date", bson.M{"$lt": cq.End}},
+			},
+		},
+	})
+
+	match := bson.D{
+		{"$match", matchStage},
+	}
+
 	group := bson.D{
 		{"$group", bson.D{
 			{"_id", "$type"},

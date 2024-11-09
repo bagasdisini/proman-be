@@ -5,6 +5,7 @@ import (
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
 	"go.mongodb.org/mongo-driver/mongo"
+	_const "proman-backend/pkg/const"
 	"proman-backend/pkg/util"
 	"time"
 )
@@ -31,7 +32,7 @@ func NewScheduleRepository(db *mongo.Database) *ScheduleCollRepository {
 	}
 }
 
-func (r *ScheduleCollRepository) FindAll(cq *util.ScheduleQuery) ([]Schedule, error) {
+func (r *ScheduleCollRepository) FindAll(cq *util.CommonQuery) ([]Schedule, error) {
 	var schedules []Schedule
 	filter := bson.M{"is_deleted": false}
 
@@ -42,45 +43,42 @@ func (r *ScheduleCollRepository) FindAll(cq *util.ScheduleQuery) ([]Schedule, er
 		}
 	}
 
-	if len(cq.Type) > 0 {
+	if len(cq.Type) > 0 && _const.IsValidScheduleType(cq.Type) {
 		filter["type"] = cq.Type
 	}
 
-	if len(cq.Contributor) > 0 {
-		filter["contributor"] = bson.M{"$in": cq.Contributor}
+	if cq.UserId != primitive.NilObjectID {
+		filter["contributor"] = cq.UserId
 	}
 
-	if !cq.Start.IsZero() {
-		filter["start_date"] = bson.M{"$gte": cq.Start}
-	}
-
-	if !cq.End.IsZero() {
-		filter["end_date"] = bson.M{"$lte": cq.End}
+	if existingOr, ok := filter["$or"]; ok {
+		filter["$or"] = append(existingOr.([]bson.M), bson.M{
+			"$or": []bson.M{
+				{
+					"start_date": bson.M{"$lt": cq.End},
+					"end_date":   bson.M{"$gte": cq.Start},
+				},
+				{
+					"start_date": bson.M{"$gte": cq.Start, "$lt": cq.End},
+				},
+			},
+		})
+	} else {
+		filter["$or"] = []bson.M{
+			{
+				"start_date": bson.M{"$lt": cq.End},
+				"end_date":   bson.M{"$gte": cq.Start},
+			},
+			{
+				"start_date": bson.M{"$gte": cq.Start, "$lt": cq.End},
+			},
+		}
 	}
 
 	cursor, err := r.coll.Find(context.TODO(), filter)
 	if err != nil {
 		return nil, err
 	}
-	if err := cursor.All(context.TODO(), &schedules); err != nil {
-		return nil, err
-	}
-	return schedules, nil
-}
-
-func (r *ScheduleCollRepository) FindAllByDateRange(startDate, endDate time.Time) ([]Schedule, error) {
-	filter := bson.M{
-		"start_date": bson.M{"$gte": startDate},
-		"end_date":   bson.M{"$lte": endDate},
-		"is_deleted": false,
-	}
-
-	cursor, err := r.coll.Find(context.TODO(), filter)
-	if err != nil {
-		return nil, err
-	}
-
-	var schedules []Schedule
 	if err := cursor.All(context.TODO(), &schedules); err != nil {
 		return nil, err
 	}

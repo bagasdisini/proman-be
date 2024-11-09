@@ -6,6 +6,7 @@ import (
 	"go.mongodb.org/mongo-driver/bson/primitive"
 	"go.mongodb.org/mongo-driver/mongo"
 	_const "proman-backend/pkg/const"
+	"proman-backend/pkg/util"
 	"time"
 )
 
@@ -59,6 +60,63 @@ func NewTaskRepository(db *mongo.Database) *TaskCollRepository {
 	}
 }
 
+func (r *TaskCollRepository) FindAll(cq *util.CommonQuery) ([]Task, error) {
+	var tasks []Task
+	filter := bson.M{"is_deleted": bson.M{"$ne": true}}
+
+	if len(cq.Q) > 0 {
+		filter["$or"] = []bson.M{
+			{"name": bson.M{"$regex": primitive.Regex{Pattern: cq.Q, Options: "i"}}},
+			{"description": bson.M{"$regex": primitive.Regex{Pattern: cq.Q, Options: "i"}}},
+		}
+	}
+
+	if len(cq.Status) > 0 && _const.IsValidTaskStatus(cq.Status) {
+		filter["status"] = cq.Status
+	}
+
+	if cq.UserId != primitive.NilObjectID {
+		filter["contributor"] = cq.UserId
+	}
+
+	if cq.ProjectId != primitive.NilObjectID {
+		filter["project_id"] = cq.ProjectId
+	}
+
+	if existingOr, ok := filter["$or"]; ok {
+		filter["$or"] = append(existingOr.([]bson.M), bson.M{
+			"$or": []bson.M{
+				{
+					"start_date": bson.M{"$lt": cq.End},
+					"end_date":   bson.M{"$gte": cq.Start},
+				},
+				{
+					"start_date": bson.M{"$gte": cq.Start, "$lt": cq.End},
+				},
+			},
+		})
+	} else {
+		filter["$or"] = []bson.M{
+			{
+				"start_date": bson.M{"$lt": cq.End},
+				"end_date":   bson.M{"$gte": cq.Start},
+			},
+			{
+				"start_date": bson.M{"$gte": cq.Start, "$lt": cq.End},
+			},
+		}
+	}
+
+	cursor, err := r.coll.Find(context.TODO(), filter)
+	if err != nil {
+		return nil, err
+	}
+	if err := cursor.All(context.TODO(), &tasks); err != nil {
+		return nil, err
+	}
+	return tasks, nil
+}
+
 func (r *TaskCollRepository) FindOneByID(_id primitive.ObjectID) (*Task, error) {
 	var user *Task
 	filter := bson.M{
@@ -73,91 +131,6 @@ func (r *TaskCollRepository) FindOneByID(_id primitive.ObjectID) (*Task, error) 
 	return user, nil
 }
 
-func (r *TaskCollRepository) FindAllByProjectID(projectID primitive.ObjectID) ([]Task, error) {
-	var tasks []Task
-	filter := bson.M{
-		"project_id": projectID,
-		"is_deleted": bson.M{"$ne": true},
-	}
-
-	cursor, err := r.coll.Find(context.TODO(), filter)
-	if err != nil {
-		return nil, err
-	}
-	defer func(cursor *mongo.Cursor, ctx context.Context) {
-		err := cursor.Close(ctx)
-		if err != nil {
-			return
-		}
-	}(cursor, context.TODO())
-
-	for cursor.Next(context.TODO()) {
-		var task Task
-		if err := cursor.Decode(&task); err != nil {
-			return nil, err
-		}
-		tasks = append(tasks, task)
-	}
-	return tasks, nil
-}
-
-func (r *TaskCollRepository) FindAllByUserID(userID primitive.ObjectID) ([]Task, error) {
-	var tasks []Task
-	filter := bson.M{
-		"contributor": bson.M{"$in": []primitive.ObjectID{userID}},
-		"is_deleted":  bson.M{"$ne": true},
-	}
-
-	cursor, err := r.coll.Find(context.TODO(), filter)
-	if err != nil {
-		return nil, err
-	}
-	defer func(cursor *mongo.Cursor, ctx context.Context) {
-		err := cursor.Close(ctx)
-		if err != nil {
-			return
-		}
-	}(cursor, context.TODO())
-
-	for cursor.Next(context.TODO()) {
-		var task Task
-		if err := cursor.Decode(&task); err != nil {
-			return nil, err
-		}
-		tasks = append(tasks, task)
-	}
-	return tasks, nil
-}
-
-func (r *TaskCollRepository) FindAllByStatusByUserID(userID primitive.ObjectID, status string) ([]Task, error) {
-	var tasks []Task
-	filter := bson.M{
-		"contributor": bson.M{"$in": []primitive.ObjectID{userID}},
-		"status":      status,
-		"is_deleted":  bson.M{"$ne": true},
-	}
-
-	cursor, err := r.coll.Find(context.TODO(), filter)
-	if err != nil {
-		return nil, err
-	}
-	defer func(cursor *mongo.Cursor, ctx context.Context) {
-		err := cursor.Close(ctx)
-		if err != nil {
-			return
-		}
-	}(cursor, context.TODO())
-
-	for cursor.Next(context.TODO()) {
-		var task Task
-		if err := cursor.Decode(&task); err != nil {
-			return nil, err
-		}
-		tasks = append(tasks, task)
-	}
-	return tasks, nil
-}
-
 func (r *TaskCollRepository) CreateOne(task *Task) error {
 	_, err := r.coll.InsertOne(context.TODO(), task)
 	if err != nil {
@@ -166,24 +139,44 @@ func (r *TaskCollRepository) CreateOne(task *Task) error {
 	return nil
 }
 
-func (r *TaskCollRepository) CountTaskByUserID(userId primitive.ObjectID, start, end time.Time) (*[]CountTaskDetail, error) {
+func (r *TaskCollRepository) CountTask(cq *util.CommonQuery) (*[]CountTaskDetail, error) {
 	var count []CountTaskDetail
-	match := bson.D{
-		{"$match", bson.D{
-			{"contributor", userId},
-			{"is_deleted", bson.M{"$ne": true}},
-			{"$or", bson.A{
-				bson.D{
-					{"start_date", bson.M{"$lt": end}},
-					{"end_date", bson.M{"$gte": start}},
-				},
-				bson.D{
-					{"start_date", bson.M{"$gte": start}},
-					{"start_date", bson.M{"$lt": end}},
-				},
-			}},
-		}},
+
+	matchStage := bson.D{{"is_deleted", bson.M{"$ne": true}}}
+
+	if len(cq.Q) > 0 {
+		matchStage = append(matchStage, bson.E{Key: "$or", Value: bson.A{
+			bson.D{{"name", primitive.Regex{Pattern: cq.Q, Options: "i"}}},
+			bson.D{{"description", primitive.Regex{Pattern: cq.Q, Options: "i"}}},
+		}})
 	}
+
+	if len(cq.Status) > 0 && _const.IsValidTaskStatus(cq.Status) {
+		matchStage = append(matchStage, bson.E{Key: "status", Value: cq.Status})
+	}
+
+	if cq.UserId != primitive.NilObjectID {
+		matchStage = append(matchStage, bson.E{Key: "contributor", Value: cq.UserId})
+	}
+
+	matchStage = append(matchStage, bson.E{
+		Key: "$or",
+		Value: bson.A{
+			bson.D{
+				{"start_date", bson.M{"$lt": cq.End}},
+				{"end_date", bson.M{"$gte": cq.Start}},
+			},
+			bson.D{
+				{"start_date", bson.M{"$gte": cq.Start}},
+				{"start_date", bson.M{"$lt": cq.End}},
+			},
+		},
+	})
+
+	match := bson.D{
+		{"$match", matchStage},
+	}
+
 	group := bson.D{
 		{"$group", bson.D{
 			{"_id", nil},
@@ -205,7 +198,7 @@ func (r *TaskCollRepository) CountTaskByUserID(userId primitive.ObjectID, start,
 	return &count, nil
 }
 
-func (r *TaskCollRepository) CountUserThatHaveTask(userRepo *UserCollRepository) (*CountUserActive, error) {
+func (r *TaskCollRepository) CountUserTask(userRepo *UserCollRepository) (*CountUserActive, error) {
 	result := &CountUserActive{}
 
 	taskPipeline := mongo.Pipeline{
@@ -221,12 +214,6 @@ func (r *TaskCollRepository) CountUserThatHaveTask(userRepo *UserCollRepository)
 	if err != nil {
 		return nil, err
 	}
-	defer func(cursor *mongo.Cursor, ctx context.Context) {
-		err := cursor.Close(ctx)
-		if err != nil {
-			return
-		}
-	}(cursor, context.TODO())
 
 	var contributorsWithTasks []primitive.ObjectID
 	for cursor.Next(context.TODO()) {

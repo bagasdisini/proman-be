@@ -88,10 +88,7 @@ func NewScheduleHandler(e *echo.Echo, db *mongo.Database) *ScheduleHandler {
 // @Success 200
 // @Security ApiKeyAuth
 func (h *ScheduleHandler) list(c echo.Context) error {
-	cq, err := util.NewScheduleQuery(c)
-	if err != nil {
-		return err
-	}
+	cq := util.NewCommonQuery(c)
 
 	schedules, err := h.scheduleRepo.FindAll(cq)
 	if err != nil {
@@ -133,8 +130,8 @@ func (h *ScheduleHandler) create(c echo.Context) error {
 		ID:          primitive.NewObjectID(),
 		Name:        form.Name,
 		Description: form.Description,
-		StartDate:   time.Unix(form.StartDate, 0),
-		EndDate:     time.Unix(form.EndDate, 0),
+		StartDate:   time.UnixMilli(form.StartDate),
+		EndDate:     time.UnixMilli(form.EndDate),
 		Contributor: contributorsOId,
 		Type:        form.Type,
 		CreatedAt:   time.Now(),

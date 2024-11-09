@@ -41,7 +41,7 @@ func NewUserHandler(e *echo.Echo, db *mongo.Database) *UserHandler {
 // @Success 200
 // @Security ApiKeyAuth
 func (h *UserHandler) userCount(c echo.Context) error {
-	count, err := h.taskRepo.CountUserThatHaveTask(h.userRepo)
+	count, err := h.taskRepo.CountUserTask(h.userRepo)
 	if err != nil {
 		if errors.Is(err, mongo.ErrNoDocuments) {
 			return echo.NewHTTPError(http.StatusBadRequest, "User not found")

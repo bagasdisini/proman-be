@@ -119,12 +119,6 @@ func (r *UserCollRepository) FindAllUsers() (*[]User, error) {
 	if err != nil {
 		return nil, err
 	}
-	defer func(cursor *mongo.Cursor, ctx context.Context) {
-		err := cursor.Close(ctx)
-		if err != nil {
-			return
-		}
-	}(cursor, context.TODO())
 
 	for cursor.Next(context.TODO()) {
 		var user User

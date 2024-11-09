@@ -44,7 +44,6 @@ func main() {
 	e := echo.New()
 	log.SetLogger(e)
 
-	config.InitConfig(".env")
 	git_api.InitGitlab()
 	db := database.ConnectMongo()
 	var err error

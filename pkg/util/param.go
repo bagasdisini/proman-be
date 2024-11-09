@@ -3,52 +3,68 @@ package util
 import (
 	"github.com/labstack/echo/v4"
 	"go.mongodb.org/mongo-driver/bson/primitive"
-	"net/http"
-	_const "proman-backend/pkg/const"
-	"strings"
 	"time"
 )
 
 type CommonQuery struct {
-	Q     string    `query:"q"`     // Default = ""
-	Qs    []string  `query:"qs"`    // Default = ""
-	Page  int       `query:"page"`  // Default = 1
-	Limit int       `query:"limit"` // Default = 10
-	Start time.Time `query:"start"` // Default = 7 days ago
-	End   time.Time `query:"end"`   // Default = today
-	Sort  string    `query:"sort"`  // Default = desc
+	Q         string
+	Type      string
+	Status    string
+	UserId    primitive.ObjectID
+	ProjectId primitive.ObjectID
+	Start     time.Time
+	End       time.Time
 }
 
-func NewCommonQuery(c echo.Context) (*CommonQuery, error) {
-	var cq = CommonQuery{}
-	if err := c.Bind(&cq); err != nil {
-		return nil, echo.NewHTTPError(http.StatusBadRequest, "Invalid query", c)
+func NewCommonQuery(c echo.Context) *CommonQuery {
+	qParam := c.QueryParam("q")
+	statusParam := c.QueryParam("status")
+	typeParam := c.QueryParam("type")
+	userIdParam := c.QueryParam("userId")
+	projectIdParam := c.QueryParam("projectId")
+	startParam := c.QueryParam("start")
+	endParam := c.QueryParam("end")
+
+	RefineString(&statusParam)
+	RefineString(&typeParam)
+
+	cq := CommonQuery{
+		Q:      qParam,
+		Status: statusParam,
+		Type:   typeParam,
+		UserId: primitive.NilObjectID,
+		Start:  time.UnixMilli(0),
+		End:    time.Date(time.Now().Year(), time.Now().Month(), time.Now().Day(), 23, 59, 59, 0, time.Local),
 	}
 
-	if cq.Q != "" {
-		arr := strings.Split(strings.ReplaceAll(cq.Q, "%2C", ","), ",")
-		cq.Qs = arr
+	if len(userIdParam) > 0 {
+		userId, err := primitive.ObjectIDFromHex(userIdParam)
+		if err == nil {
+			cq.UserId = userId
+		}
 	}
 
-	if cq.Page < 1 {
-		cq.Page = 1
+	if len(projectIdParam) > 0 {
+		projectId, err := primitive.ObjectIDFromHex(projectIdParam)
+		if err == nil {
+			cq.ProjectId = projectId
+		}
 	}
 
-	if cq.Limit < 1 {
-		cq.Limit = 10
+	if len(startParam) > 0 {
+		start, err := time.Parse(time.RFC3339, startParam)
+		if err == nil {
+			cq.Start = start
+		}
 	}
 
-	if cq.End.IsZero() {
-		cq.End = time.Now().Truncate(24 * time.Hour).Add(24 * time.Hour)
+	if len(endParam) > 0 {
+		end, err := time.Parse(time.RFC3339, endParam)
+		if err == nil {
+			cq.End = end
+		}
 	}
-	if cq.Start.IsZero() {
-		cq.Start = cq.End.AddDate(0, 0, -7)
-	}
-
-	if cq.Sort != "asc" && cq.Sort != "desc" {
-		cq.Sort = "desc"
-	}
-	return &cq, nil
+	return &cq
 }
 
 func (dr *CommonQuery) PreviousPeriod() *CommonQuery {
@@ -58,53 +74,4 @@ func (dr *CommonQuery) PreviousPeriod() *CommonQuery {
 		dr.End = time.Unix(dr.Start.Unix()-1, 0)
 	}
 	return dr
-}
-
-type ScheduleQuery struct {
-	Q           string
-	Type        string
-	Contributor []primitive.ObjectID
-	Start       time.Time
-	End         time.Time
-}
-
-func NewScheduleQuery(c echo.Context) (*ScheduleQuery, error) {
-	var cq = ScheduleQuery{}
-
-	cq.Q = c.QueryParam("q")
-	cq.Type = c.QueryParam("type")
-	if len(cq.Type) > 0 && !_const.IsValidScheduleType(cq.Type) {
-		return nil, echo.NewHTTPError(http.StatusBadRequest, "Invalid type")
-	}
-
-	contributorStr := c.QueryParam("contributor")
-	if len(contributorStr) > 0 {
-		contributorArr := strings.Split(contributorStr, ",")
-		for _, v := range contributorArr {
-			contributorID, err := primitive.ObjectIDFromHex(v)
-			if err != nil {
-				return nil, echo.NewHTTPError(http.StatusBadRequest, "Invalid contributor ID")
-			}
-			cq.Contributor = append(cq.Contributor, contributorID)
-		}
-	}
-
-	startStr := c.QueryParam("start")
-	if len(startStr) > 0 {
-		start, err := time.Parse(time.RFC3339, startStr)
-		if err != nil {
-			return nil, echo.NewHTTPError(http.StatusBadRequest, "Invalid start date")
-		}
-		cq.Start = start
-	}
-
-	endStr := c.QueryParam("end")
-	if len(endStr) > 0 {
-		end, err := time.Parse(time.RFC3339, endStr)
-		if err != nil {
-			return nil, echo.NewHTTPError(http.StatusBadRequest, "Invalid end date")
-		}
-		cq.End = end
-	}
-	return &cq, nil
 }

@@ -3,7 +3,6 @@ package handler
 import (
 	"errors"
 	"github.com/labstack/echo/v4"
-	"go.mongodb.org/mongo-driver/bson/primitive"
 	"go.mongodb.org/mongo-driver/mongo"
 	"net/http"
 	"proman-backend/api/repository"
@@ -11,7 +10,6 @@ import (
 	"proman-backend/pkg/context"
 	"proman-backend/pkg/log"
 	"proman-backend/pkg/util"
-	"time"
 )
 
 type MeHandler struct {
@@ -32,7 +30,6 @@ func NewMeHandler(e *echo.Echo, db *mongo.Database) *MeHandler {
 	me := e.Group("/api", context.ContextHandler)
 
 	me.GET("/me", h.me)
-	me.GET("/me/schedules", h.mySchedule)
 
 	me.GET("/me/projects", h.myProjects)
 	me.GET("/me/project/count", h.myProjectCount)
@@ -42,6 +39,8 @@ func NewMeHandler(e *echo.Echo, db *mongo.Database) *MeHandler {
 	me.GET("/me/task/count", h.myTaskCount)
 	me.GET("/me/task/overview", h.myTaskOverview)
 	me.GET("/me/task/status", h.myTaskStatus)
+
+	me.GET("/me/schedules", h.mySchedule)
 
 	return h
 }
@@ -87,13 +86,10 @@ func (h *MeHandler) me(c echo.Context) error {
 // @Success 200
 // @Security ApiKeyAuth
 func (h *MeHandler) mySchedule(c echo.Context) error {
-	cq, err := util.NewScheduleQuery(c)
-	if err != nil {
-		return err
-	}
-
 	uc := c.(*context.Context)
-	cq.Contributor = []primitive.ObjectID{uc.Claims.IDAsObjectID}
+
+	cq := util.NewCommonQuery(c)
+	cq.UserId = uc.Claims.IDAsObjectID
 
 	schedules, err := h.scheduleRepo.FindAll(cq)
 	if err != nil {
@@ -117,7 +113,11 @@ func (h *MeHandler) mySchedule(c echo.Context) error {
 // @Security ApiKeyAuth
 func (h *MeHandler) myProjects(c echo.Context) error {
 	uc := c.(*context.Context)
-	projects, err := h.projectRepo.FindAllByContributorID(uc.Claims.IDAsObjectID)
+
+	cq := util.NewCommonQuery(c)
+	cq.UserId = uc.Claims.IDAsObjectID
+
+	projects, err := h.projectRepo.FindAll(cq)
 	if err != nil {
 		if errors.Is(err, mongo.ErrNoDocuments) {
 			return echo.NewHTTPError(http.StatusNotFound, "Project not found")
@@ -140,7 +140,10 @@ func (h *MeHandler) myProjects(c echo.Context) error {
 func (h *MeHandler) myProjectCount(c echo.Context) error {
 	uc := c.(*context.Context)
 
-	count, err := h.projectRepo.CountProjectByUser(uc.Claims.IDAsObjectID)
+	cq := util.NewCommonQuery(c)
+	cq.UserId = uc.Claims.IDAsObjectID
+
+	count, err := h.projectRepo.CountProject(cq)
 	if err != nil {
 		if errors.Is(err, mongo.ErrNoDocuments) {
 			return echo.NewHTTPError(http.StatusNotFound, "Project not found")
@@ -149,11 +152,7 @@ func (h *MeHandler) myProjectCount(c echo.Context) error {
 		return echo.NewHTTPError(http.StatusInternalServerError, "There was an error, please try again")
 	}
 
-	if len(*count) > 0 {
-		return c.JSON(http.StatusOK, (*count)[0])
-	} else {
-		return c.JSON(http.StatusOK, repository.CountProjectDetail{})
-	}
+	return c.JSON(http.StatusOK, count)
 }
 
 // My Project Count By Type
@@ -166,8 +165,12 @@ func (h *MeHandler) myProjectCount(c echo.Context) error {
 // @Success 200
 // @Security ApiKeyAuth
 func (h *MeHandler) myProjectCountByType(c echo.Context) error {
-	nc := c.(*context.Context)
-	count, err := h.projectRepo.CountProjectTypesByUser(nc.Claims.IDAsObjectID)
+	uc := c.(*context.Context)
+
+	cq := util.NewCommonQuery(c)
+	cq.UserId = uc.Claims.IDAsObjectID
+
+	count, err := h.projectRepo.CountProjectTypes(cq)
 	if err != nil {
 		if errors.Is(err, mongo.ErrNoDocuments) {
 			return echo.NewHTTPError(http.StatusNotFound, "Project not found")
@@ -189,7 +192,11 @@ func (h *MeHandler) myProjectCountByType(c echo.Context) error {
 // @Security ApiKeyAuth
 func (h *MeHandler) myTasks(c echo.Context) error {
 	uc := c.(*context.Context)
-	tasks, err := h.taskRepo.FindAllByUserID(uc.Claims.IDAsObjectID)
+
+	cq := util.NewCommonQuery(c)
+	cq.UserId = uc.Claims.IDAsObjectID
+
+	tasks, err := h.taskRepo.FindAll(cq)
 	if err != nil {
 		if errors.Is(err, mongo.ErrNoDocuments) {
 			return echo.NewHTTPError(http.StatusNotFound, "Task not found")
@@ -211,7 +218,11 @@ func (h *MeHandler) myTasks(c echo.Context) error {
 // @Security ApiKeyAuth
 func (h *MeHandler) myTaskCount(c echo.Context) error {
 	uc := c.(*context.Context)
-	count, err := h.taskRepo.CountTaskByUserID(uc.Claims.IDAsObjectID, time.UnixMicro(0), time.Now())
+
+	cq := util.NewCommonQuery(c)
+	cq.UserId = uc.Claims.IDAsObjectID
+
+	count, err := h.taskRepo.CountTask(cq)
 	if err != nil {
 		if errors.Is(err, mongo.ErrNoDocuments) {
 			return echo.NewHTTPError(http.StatusNotFound, "Task not found")
@@ -240,15 +251,18 @@ func (h *MeHandler) myTaskOverview(c echo.Context) error {
 	var doc []repository.TaskOverview
 	uc := c.(*context.Context)
 
-	for _, v := range []int{-7, -6, -5, -4, -3, -2, -1, 0} {
-		start := util.StartOfWeek(v)
-		end := util.EndOfWeek(v)
+	cq := util.NewCommonQuery(c)
+	cq.UserId = uc.Claims.IDAsObjectID
 
-		count, err := h.taskRepo.CountTaskByUserID(uc.Claims.IDAsObjectID, start, end)
+	for _, v := range []int{-7, -6, -5, -4, -3, -2, -1, 0} {
+		cq.Start = util.StartOfWeek(v)
+		cq.End = util.EndOfWeek(v)
+
+		count, err := h.taskRepo.CountTask(cq)
 		if err != nil || len(*count) == 0 {
 			doc = append(doc, repository.TaskOverview{
-				Start: start.Format("02 Jan"),
-				End:   end.Format("02 Jan"),
+				Start: cq.Start.Format("02 Jan"),
+				End:   cq.End.Format("02 Jan"),
 				Count: 0,
 			})
 			log.Warnf("Error counting task: %v, count: %v", err, count)
@@ -256,9 +270,9 @@ func (h *MeHandler) myTaskOverview(c echo.Context) error {
 		}
 
 		doc = append(doc, repository.TaskOverview{
-			Start: start.Format("02 Jan"),
-			End:   end.Format("02 Jan"),
-			Count: (*count)[0].Total,
+			Start: cq.Start.Format("02 Jan"),
+			End:   cq.End.Format("02 Jan"),
+			Count: (*count)[0].Active + (*count)[0].Testing + (*count)[0].Completed,
 		})
 	}
 	return c.JSON(http.StatusOK, doc)
@@ -276,29 +290,37 @@ func (h *MeHandler) myTaskOverview(c echo.Context) error {
 func (h *MeHandler) myTaskStatus(c echo.Context) error {
 	uc := c.(*context.Context)
 
+	cq := util.NewCommonQuery(c)
+	cq.UserId = uc.Claims.IDAsObjectID
+
 	docs := repository.TaskGroup{}
-	active, err := h.taskRepo.FindAllByStatusByUserID(uc.Claims.IDAsObjectID, _const.TaskActive)
+
+	cq.Status = _const.TaskActive
+	active, err := h.taskRepo.FindAll(cq)
 	if err == nil {
 		docs.Active = active
 	} else {
 		log.Warnf("Error finding active task: %v", err)
 	}
 
-	testing, err := h.taskRepo.FindAllByStatusByUserID(uc.Claims.IDAsObjectID, _const.TaskTesting)
+	cq.Status = _const.TaskTesting
+	testing, err := h.taskRepo.FindAll(cq)
 	if err == nil {
 		docs.Testing = testing
 	} else {
 		log.Warnf("Error finding testing task: %v", err)
 	}
 
-	completed, err := h.taskRepo.FindAllByStatusByUserID(uc.Claims.IDAsObjectID, _const.TaskCompleted)
+	cq.Status = _const.TaskCompleted
+	completed, err := h.taskRepo.FindAll(cq)
 	if err == nil {
 		docs.Completed = completed
 	} else {
 		log.Warnf("Error finding completed task: %v", err)
 	}
 
-	cancelled, err := h.taskRepo.FindAllByStatusByUserID(uc.Claims.IDAsObjectID, _const.TaskCancelled)
+	cq.Status = _const.TaskCancelled
+	cancelled, err := h.taskRepo.FindAll(cq)
 	if err == nil {
 		docs.Cancelled = cancelled
 	} else {
