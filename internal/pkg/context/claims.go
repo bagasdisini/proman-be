@@ -59,7 +59,6 @@ func (c *Context) LoggedInUser() *repository.User {
 			log.Panicc(c, err)
 		}
 		c.loggedInUser = u
-		c.Claims.Role = u.Role
 	}
 	return c.loggedInUser
 }
@@ -158,7 +157,6 @@ func MakeToken(u *repository.User) (string, error) {
 	token := jwt.New(jwt.SigningMethodHS256)
 	claims := token.Claims.(jwt.MapClaims)
 	claims["id"] = u.ID.Hex()
-	claims["role"] = u.Role
 	claims["expiredDateInMilis"] = time.Now().AddDate(0, 0, config.JWT.Expire).Unix() * 1000
 
 	accessToken, err := token.SignedString([]byte(config.JWT.Key))

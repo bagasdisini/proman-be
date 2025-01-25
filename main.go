@@ -9,25 +9,20 @@ import (
 	"github.com/labstack/echo/v4"
 	"github.com/labstack/echo/v4/middleware"
 	echoswagger "github.com/swaggo/echo-swagger"
-	"go.mongodb.org/mongo-driver/v2/bson"
-	"go.mongodb.org/mongo-driver/v2/mongo"
-	"golang.org/x/crypto/ssh/terminal"
 	"net/http"
-	"os"
-	"proman-backend/api/handler"
-	"proman-backend/api/repository"
+	"proman-backend/api/handler/auth"
+	"proman-backend/api/handler/me"
+	"proman-backend/api/handler/project"
+	"proman-backend/api/handler/schedule"
+	"proman-backend/api/handler/task"
+	"proman-backend/api/handler/user"
 	"proman-backend/config"
 	"proman-backend/docs"
 	"proman-backend/internal/database"
-	"proman-backend/internal/pkg/const"
 	"proman-backend/internal/pkg/file"
-	"proman-backend/internal/pkg/git-api"
 	"proman-backend/internal/pkg/log"
-	"proman-backend/internal/pkg/util"
 	"proman-backend/version"
 	"strings"
-	"syscall"
-	"time"
 )
 
 // @title Proman Backend
@@ -44,7 +39,7 @@ func main() {
 	e := echo.New()
 	log.SetLogger(e)
 
-	git_api.InitGitlab()
+	//git_api.InitGitlab()
 	db := database.ConnectMongo()
 	var err error
 
@@ -69,13 +64,6 @@ func main() {
 	file.Uploader = s3manager.NewUploader(file.Sess)
 	file.Downloader = s3manager.NewDownloader(file.Sess)
 	file.S3Client = s3.New(file.Sess)
-
-	if len(os.Args) > 1 {
-		if os.Args[1] == "init-admin" {
-			initAdmin(db)
-			return
-		}
-	}
 
 	e.Use(middleware.CORSWithConfig(middleware.CORSConfig{
 		AllowOrigins:     strings.Split(config.App.AllowOrigins, ","),
@@ -107,47 +95,12 @@ func main() {
 	docs.SwaggerInfo.Version = version.Version
 	docs.SwaggerInfo.Host = config.App.SwaggerHost
 
-	handler.NewAuthHandler(e, db)
-	handler.NewMeHandler(e, db)
-	handler.NewProjectHandler(e, db)
-	handler.NewTaskHandler(e, db)
-	handler.NewUserHandler(e, db)
-	handler.NewScheduleHandler(e, db)
+	auth.NewHandler(e, db)
+	me.NewHandler(e, db)
+	project.NewHandler(e, db)
+	task.NewHandler(e, db)
+	user.NewHandler(e, db)
+	schedule.NewHandler(e, db)
 
 	log.Fatal(e.Start(fmt.Sprintf(`%v:%v`, config.App.Host, config.App.Port)))
-}
-
-func initAdmin(db *mongo.Database) {
-	repos := repository.NewUserRepository(db)
-
-	if repos.Check() {
-		fmt.Println("Initiate failed, user already exists.")
-		return
-	}
-
-	fmt.Println("This command will creates a users with role admin")
-	fmt.Print("Insert password for admin : ")
-	bytePassword, _ := terminal.ReadPassword(int(syscall.Stdin))
-	password := string(bytePassword)
-	password = strings.TrimSuffix(password, "\n")
-
-	user := &repository.User{
-		ID:        bson.NewObjectID(),
-		Email:     "admin@admin.com",
-		Password:  util.CryptPassword(password),
-		Name:      "admin",
-		Role:      _const.RoleAdmin,
-		Position:  _const.PositionSysAdmin,
-		CreatedAt: time.Now(),
-		IsDeleted: false,
-	}
-
-	_, err := repos.Insert(user)
-	if err != nil {
-		fmt.Println("\nInitiate super admin failed, there is an error : ", err)
-		return
-	}
-
-	fmt.Println("\n\nInitiate admin success!")
-	fmt.Println("Admin email : admin@admin.com")
 }

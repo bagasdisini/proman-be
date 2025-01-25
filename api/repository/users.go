@@ -13,9 +13,8 @@ import (
 type User struct {
 	ID           bson.ObjectID `json:"_id" bson:"_id"`
 	Email        string        `json:"email" bson:"email"`
-	Password     string        `json:"password" bson:"password"`
+	Password     string        `json:"-" bson:"password"`
 	Name         string        `json:"name" bson:"name"`
-	Role         string        `json:"role" bson:"role"`
 	Position     string        `json:"position" bson:"position"`
 	Avatar       string        `json:"avatar" bson:"avatar"`
 	Phone        string        `json:"phone" bson:"phone"`
@@ -130,7 +129,6 @@ func (r *UserCollRepository) FindAllUsers() (*[]User, error) {
 	if err := cursor.Err(); err != nil {
 		return nil, err
 	}
-
 	return &users, nil
 }
 

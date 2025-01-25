@@ -1,4 +1,4 @@
-package handler
+package project
 
 import (
 	"errors"
@@ -17,57 +17,13 @@ import (
 	"time"
 )
 
-type projectForm struct {
-	Name        string `json:"name" form:"name"`
-	Description string `json:"description" form:"description"`
-	StartDate   int64  `json:"start_date" form:"start_date"`
-	EndDate     int64  `json:"end_date" form:"end_date"`
-	Contributor string `json:"contributor" form:"contributor"`
-	Type        string `json:"type" form:"type"`
-	Logo        string `json:"logo" bson:"logo"`
-	Attachments string `json:"attachments" bson:"attachments"`
-}
-
-func newProjectForm(c echo.Context) (*projectForm, error) {
-	form := projectForm{}
-	if err := c.Bind(&form); err != nil {
-		log.Errorf("Error binding project form: %v", err)
-		return nil, echo.NewHTTPError(http.StatusBadRequest, "Invalid data format.")
-	}
-
-	form.Name = strings.TrimSpace(form.Name)
-	form.Description = strings.TrimSpace(form.Description)
-	form.Contributor = strings.TrimSpace(form.Contributor)
-	form.Type = strings.TrimSpace(form.Type)
-
-	if form.Name == "" {
-		return nil, echo.NewHTTPError(http.StatusBadRequest, "Name cannot be empty.")
-	}
-	if form.Description == "" {
-		return nil, echo.NewHTTPError(http.StatusBadRequest, "Description cannot be empty.")
-	}
-	if form.Contributor == "" {
-		return nil, echo.NewHTTPError(http.StatusBadRequest, "Contributor cannot be empty.")
-	}
-	if form.Type == "" {
-		return nil, echo.NewHTTPError(http.StatusBadRequest, "Type cannot be empty.")
-	}
-	if form.StartDate <= 0 {
-		return nil, echo.NewHTTPError(http.StatusBadRequest, "Invalid start date.")
-	}
-	if form.EndDate <= 0 {
-		return nil, echo.NewHTTPError(http.StatusBadRequest, "Invalid end date.")
-	}
-	return &form, nil
-}
-
-type ProjectHandler struct {
+type Handler struct {
 	projectRepo *repository.ProjectCollRepository
 	taskRepo    *repository.TaskCollRepository
 }
 
-func NewProjectHandler(e *echo.Echo, db *mongo.Database) *ProjectHandler {
-	h := &ProjectHandler{
+func NewHandler(e *echo.Echo, db *mongo.Database) *Handler {
+	h := &Handler{
 		projectRepo: repository.NewProjectRepository(db),
 		taskRepo:    repository.NewTaskRepository(db),
 	}
@@ -93,7 +49,7 @@ func NewProjectHandler(e *echo.Echo, db *mongo.Database) *ProjectHandler {
 // @Produce json
 // @Success 200
 // @Security ApiKeyAuth
-func (h *ProjectHandler) list(c echo.Context) error {
+func (h *Handler) list(c echo.Context) error {
 	cq := util.NewCommonQuery(c)
 
 	projects, err := h.projectRepo.FindAll(cq)
@@ -117,7 +73,7 @@ func (h *ProjectHandler) list(c echo.Context) error {
 // @Param id path string true "Project ID"
 // @Success 200
 // @Security ApiKeyAuth
-func (h *ProjectHandler) detail(c echo.Context) error {
+func (h *Handler) detail(c echo.Context) error {
 	id := c.Param("id")
 
 	oId, err := bson.ObjectIDFromHex(id)
@@ -153,7 +109,7 @@ func (h *ProjectHandler) detail(c echo.Context) error {
 // @Param attachments formData file false "Project attachments"
 // @Success 200
 // @Security ApiKeyAuth
-func (h *ProjectHandler) create(c echo.Context) error {
+func (h *Handler) create(c echo.Context) error {
 	form, err := newProjectForm(c)
 	if err != nil {
 		return err
@@ -221,7 +177,7 @@ func (h *ProjectHandler) create(c echo.Context) error {
 // @Param id path string true "Project ID"
 // @Success 200
 // @Security ApiKeyAuth
-func (h *ProjectHandler) delete(c echo.Context) error {
+func (h *Handler) delete(c echo.Context) error {
 	id := c.Param("id")
 
 	oId, err := bson.ObjectIDFromHex(id)

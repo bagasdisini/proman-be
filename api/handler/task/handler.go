@@ -1,4 +1,4 @@
-package handler
+package task
 
 import (
 	"github.com/labstack/echo/v4"
@@ -13,55 +13,12 @@ import (
 	"time"
 )
 
-type taskForm struct {
-	Name        string `json:"name" form:"name"`
-	Description string `json:"description" form:"description"`
-	StartDate   int64  `json:"start_date" form:"start_date"`
-	EndDate     int64  `json:"end_date" form:"end_date"`
-	Contributor string `json:"contributor" form:"contributor"`
-	ProjectID   string `json:"project_id" form:"project_id"`
-}
-
-func newTaskForm(c echo.Context) (*taskForm, error) {
-	form := taskForm{}
-	if err := c.Bind(&form); err != nil {
-		log.Errorf("Error binding task form: %v", err)
-		return nil, echo.NewHTTPError(http.StatusBadRequest, "Invalid data format.")
-	}
-
-	form.Name = strings.TrimSpace(form.Name)
-	form.Description = strings.TrimSpace(form.Description)
-	form.Contributor = strings.TrimSpace(form.Contributor)
-	form.ProjectID = strings.TrimSpace(form.ProjectID)
-
-	if form.Name == "" {
-		return nil, echo.NewHTTPError(http.StatusBadRequest, "Name cannot be empty.")
-	}
-	if form.Description == "" {
-		return nil, echo.NewHTTPError(http.StatusBadRequest, "Description cannot be empty.")
-	}
-	if form.Contributor == "" {
-		return nil, echo.NewHTTPError(http.StatusBadRequest, "Contributor cannot be empty.")
-	}
-	if form.StartDate <= 0 {
-		return nil, echo.NewHTTPError(http.StatusBadRequest, "Invalid start date.")
-	}
-	if form.EndDate <= 0 {
-		return nil, echo.NewHTTPError(http.StatusBadRequest, "Invalid end date.")
-	}
-	_, err := bson.ObjectIDFromHex(form.ProjectID)
-	if err != nil {
-		return nil, echo.NewHTTPError(http.StatusBadRequest, "Invalid project ID.")
-	}
-	return &form, nil
-}
-
-type TaskHandler struct {
+type Handler struct {
 	taskRepo *repository.TaskCollRepository
 }
 
-func NewTaskHandler(e *echo.Echo, db *mongo.Database) *TaskHandler {
-	h := &TaskHandler{
+func NewHandler(e *echo.Echo, db *mongo.Database) *Handler {
+	h := &Handler{
 		taskRepo: repository.NewTaskRepository(db),
 	}
 
@@ -84,7 +41,7 @@ func NewTaskHandler(e *echo.Echo, db *mongo.Database) *TaskHandler {
 // @Param body body taskForm true "Task data"
 // @Success 200
 // @Security ApiKeyAuth
-func (h *TaskHandler) create(c echo.Context) error {
+func (h *Handler) create(c echo.Context) error {
 	form, err := newTaskForm(c)
 	if err != nil {
 		return err
@@ -135,7 +92,7 @@ func (h *TaskHandler) create(c echo.Context) error {
 // @Param id path string true "Task ID"
 // @Success 200
 // @Security ApiKeyAuth
-func (h *TaskHandler) delete(c echo.Context) error {
+func (h *Handler) delete(c echo.Context) error {
 	id := c.Param("id")
 	if id == "" {
 		return echo.NewHTTPError(http.StatusBadRequest, "Task ID cannot be empty.")

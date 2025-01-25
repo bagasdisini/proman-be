@@ -1,4 +1,4 @@
-package handler
+package user
 
 import (
 	"errors"
@@ -10,14 +10,14 @@ import (
 	"proman-backend/internal/pkg/log"
 )
 
-type UserHandler struct {
+type Handler struct {
 	userRepo    *repository.UserCollRepository
 	taskRepo    *repository.TaskCollRepository
 	projectRepo *repository.ProjectCollRepository
 }
 
-func NewUserHandler(e *echo.Echo, db *mongo.Database) *UserHandler {
-	h := &UserHandler{
+func NewHandler(e *echo.Echo, db *mongo.Database) *Handler {
+	h := &Handler{
 		userRepo:    repository.NewUserRepository(db),
 		taskRepo:    repository.NewTaskRepository(db),
 		projectRepo: repository.NewProjectRepository(db),
@@ -40,7 +40,7 @@ func NewUserHandler(e *echo.Echo, db *mongo.Database) *UserHandler {
 // @Produce json
 // @Success 200
 // @Security ApiKeyAuth
-func (h *UserHandler) userCount(c echo.Context) error {
+func (h *Handler) userCount(c echo.Context) error {
 	count, err := h.taskRepo.CountUserTask(h.userRepo)
 	if err != nil {
 		if errors.Is(err, mongo.ErrNoDocuments) {
@@ -61,7 +61,7 @@ func (h *UserHandler) userCount(c echo.Context) error {
 // @Produce json
 // @Success 200
 // @Security ApiKeyAuth
-func (h *UserHandler) userList(c echo.Context) error {
+func (h *Handler) userList(c echo.Context) error {
 	users, err := h.userRepo.FindAllUsers()
 	if err != nil {
 		if errors.Is(err, mongo.ErrNoDocuments) {

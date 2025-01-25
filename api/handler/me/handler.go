@@ -1,4 +1,4 @@
-package handler
+package me
 
 import (
 	"errors"
@@ -13,15 +13,15 @@ import (
 	util2 "proman-backend/internal/pkg/util"
 )
 
-type MeHandler struct {
+type Handler struct {
 	userRepo     *repository.UserCollRepository
 	projectRepo  *repository.ProjectCollRepository
 	taskRepo     *repository.TaskCollRepository
 	scheduleRepo *repository.ScheduleCollRepository
 }
 
-func NewMeHandler(e *echo.Echo, db *mongo.Database) *MeHandler {
-	h := &MeHandler{
+func NewHandler(e *echo.Echo, db *mongo.Database) *Handler {
+	h := &Handler{
 		userRepo:     repository.NewUserRepository(db),
 		projectRepo:  repository.NewProjectRepository(db),
 		taskRepo:     repository.NewTaskRepository(db),
@@ -55,7 +55,7 @@ func NewMeHandler(e *echo.Echo, db *mongo.Database) *MeHandler {
 // @Produce json
 // @Success 200
 // @Security ApiKeyAuth
-func (h *MeHandler) me(c echo.Context) error {
+func (h *Handler) me(c echo.Context) error {
 	uc := c.(*context.Context)
 
 	user, err := h.userRepo.FindOneByID(uc.Claims.IDAsObjectID)
@@ -86,7 +86,7 @@ func (h *MeHandler) me(c echo.Context) error {
 // @Produce json
 // @Success 200
 // @Security ApiKeyAuth
-func (h *MeHandler) mySchedule(c echo.Context) error {
+func (h *Handler) mySchedule(c echo.Context) error {
 	uc := c.(*context.Context)
 
 	cq := util2.NewCommonQuery(c)
@@ -119,7 +119,7 @@ func (h *MeHandler) mySchedule(c echo.Context) error {
 // @Produce json
 // @Success 200
 // @Security ApiKeyAuth
-func (h *MeHandler) myProjects(c echo.Context) error {
+func (h *Handler) myProjects(c echo.Context) error {
 	uc := c.(*context.Context)
 
 	cq := util2.NewCommonQuery(c)
@@ -157,7 +157,7 @@ func (h *MeHandler) myProjects(c echo.Context) error {
 // @Produce json
 // @Success 200
 // @Security ApiKeyAuth
-func (h *MeHandler) myProjectCount(c echo.Context) error {
+func (h *Handler) myProjectCount(c echo.Context) error {
 	uc := c.(*context.Context)
 
 	cq := util2.NewCommonQuery(c)
@@ -184,7 +184,7 @@ func (h *MeHandler) myProjectCount(c echo.Context) error {
 // @Produce json
 // @Success 200
 // @Security ApiKeyAuth
-func (h *MeHandler) myProjectCountByType(c echo.Context) error {
+func (h *Handler) myProjectCountByType(c echo.Context) error {
 	uc := c.(*context.Context)
 
 	cq := util2.NewCommonQuery(c)
@@ -210,7 +210,7 @@ func (h *MeHandler) myProjectCountByType(c echo.Context) error {
 // @Produce json
 // @Success 200
 // @Security ApiKeyAuth
-func (h *MeHandler) myTasks(c echo.Context) error {
+func (h *Handler) myTasks(c echo.Context) error {
 	uc := c.(*context.Context)
 
 	cq := util2.NewCommonQuery(c)
@@ -236,7 +236,7 @@ func (h *MeHandler) myTasks(c echo.Context) error {
 // @Produce json
 // @Success 200
 // @Security ApiKeyAuth
-func (h *MeHandler) myTaskCount(c echo.Context) error {
+func (h *Handler) myTaskCount(c echo.Context) error {
 	uc := c.(*context.Context)
 
 	cq := util2.NewCommonQuery(c)
@@ -267,7 +267,7 @@ func (h *MeHandler) myTaskCount(c echo.Context) error {
 // @Produce json
 // @Success 200
 // @Security ApiKeyAuth
-func (h *MeHandler) myTaskOverview(c echo.Context) error {
+func (h *Handler) myTaskOverview(c echo.Context) error {
 	var doc []repository.TaskOverview
 	uc := c.(*context.Context)
 
@@ -307,7 +307,7 @@ func (h *MeHandler) myTaskOverview(c echo.Context) error {
 // @Produce json
 // @Success 200
 // @Security ApiKeyAuth
-func (h *MeHandler) myTaskStatus(c echo.Context) error {
+func (h *Handler) myTaskStatus(c echo.Context) error {
 	uc := c.(*context.Context)
 
 	cq := util2.NewCommonQuery(c)

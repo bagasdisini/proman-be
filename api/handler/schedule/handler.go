@@ -1,4 +1,4 @@
-package handler
+package schedule
 
 import (
 	"errors"
@@ -14,54 +14,12 @@ import (
 	"time"
 )
 
-type scheduleForm struct {
-	Name        string `json:"name" form:"name"`
-	Description string `json:"description" form:"description"`
-	StartDate   int64  `json:"start_date" form:"start_date"`
-	EndDate     int64  `json:"end_date" form:"end_date"`
-	Contributor string `json:"contributor" form:"contributor"`
-	Type        string `json:"type" form:"type"`
-}
-
-func newScheduleForm(c echo.Context) (*scheduleForm, error) {
-	form := scheduleForm{}
-	if err := c.Bind(&form); err != nil {
-		log.Errorf("Error binding schedule form: %v", err)
-		return nil, echo.NewHTTPError(http.StatusBadRequest, "Invalid data format.")
-	}
-
-	form.Name = strings.TrimSpace(form.Name)
-	form.Description = strings.TrimSpace(form.Description)
-	form.Contributor = strings.TrimSpace(form.Contributor)
-	form.Type = strings.TrimSpace(form.Type)
-
-	if form.Name == "" {
-		return nil, echo.NewHTTPError(http.StatusBadRequest, "Name cannot be empty.")
-	}
-	if form.Description == "" {
-		return nil, echo.NewHTTPError(http.StatusBadRequest, "Description cannot be empty.")
-	}
-	if form.Contributor == "" {
-		return nil, echo.NewHTTPError(http.StatusBadRequest, "Contributor cannot be empty.")
-	}
-	if form.Type == "" {
-		return nil, echo.NewHTTPError(http.StatusBadRequest, "Type cannot be empty.")
-	}
-	if form.StartDate <= 0 {
-		return nil, echo.NewHTTPError(http.StatusBadRequest, "Invalid start date.")
-	}
-	if form.EndDate <= 0 {
-		return nil, echo.NewHTTPError(http.StatusBadRequest, "Invalid end date.")
-	}
-	return &form, nil
-}
-
-type ScheduleHandler struct {
+type Handler struct {
 	scheduleRepo *repository.ScheduleCollRepository
 }
 
-func NewScheduleHandler(e *echo.Echo, db *mongo.Database) *ScheduleHandler {
-	h := &ScheduleHandler{
+func NewHandler(e *echo.Echo, db *mongo.Database) *Handler {
+	h := &Handler{
 		scheduleRepo: repository.NewScheduleRepository(db),
 	}
 
@@ -87,7 +45,7 @@ func NewScheduleHandler(e *echo.Echo, db *mongo.Database) *ScheduleHandler {
 // @Produce json
 // @Success 200
 // @Security ApiKeyAuth
-func (h *ScheduleHandler) list(c echo.Context) error {
+func (h *Handler) list(c echo.Context) error {
 	cq := util.NewCommonQuery(c)
 
 	schedules, err := h.scheduleRepo.FindAll(cq)
@@ -111,7 +69,7 @@ func (h *ScheduleHandler) list(c echo.Context) error {
 // @Param body body scheduleForm true "Schedule data"
 // @Success 200
 // @Security ApiKeyAuth
-func (h *ScheduleHandler) create(c echo.Context) error {
+func (h *Handler) create(c echo.Context) error {
 	form, err := newScheduleForm(c)
 	if err != nil {
 		return err
