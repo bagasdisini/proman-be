@@ -1,18 +1,18 @@
 basePath: /
 definitions:
-  handler.forgotPasswordForm:
+  auth.forgotPasswordForm:
     properties:
       email:
         type: string
     type: object
-  handler.loginForm:
+  auth.loginForm:
     properties:
       email:
         type: string
       password:
         type: string
     type: object
-  handler.registerForm:
+  auth.registerForm:
     properties:
       confirm_password:
         type: string
@@ -23,7 +23,20 @@ definitions:
       password:
         type: string
     type: object
-  handler.scheduleForm:
+  me.updateMeForm:
+    properties:
+      email:
+        type: string
+      name:
+        type: string
+      password:
+        type: string
+      phone:
+        type: string
+      position:
+        type: string
+    type: object
+  schedule.scheduleForm:
     properties:
       contributor:
         type: string
@@ -38,7 +51,7 @@ definitions:
       type:
         type: string
     type: object
-  handler.taskForm:
+  task.taskForm:
     properties:
       contributor:
         type: string
@@ -69,7 +82,7 @@ paths:
         name: body
         required: true
         schema:
-          $ref: '#/definitions/handler.forgotPasswordForm'
+          $ref: '#/definitions/auth.forgotPasswordForm'
       produces:
       - application/json
       responses:
@@ -89,7 +102,7 @@ paths:
         name: body
         required: true
         schema:
-          $ref: '#/definitions/handler.loginForm'
+          $ref: '#/definitions/auth.loginForm'
       produces:
       - application/json
       responses:
@@ -111,6 +124,27 @@ paths:
       security:
       - ApiKeyAuth: []
       summary: Get my info
+      tags:
+      - Me
+    put:
+      consumes:
+      - application/json
+      operationId: update-me
+      parameters:
+      - description: update me json
+        in: body
+        name: body
+        required: true
+        schema:
+          $ref: '#/definitions/me.updateMeForm'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+      security:
+      - ApiKeyAuth: []
+      summary: Update my profile
       tags:
       - Me
   /api/me/project/count:
@@ -415,7 +449,7 @@ paths:
         name: body
         required: true
         schema:
-          $ref: '#/definitions/handler.registerForm'
+          $ref: '#/definitions/auth.registerForm'
       produces:
       - application/json
       responses:
@@ -435,7 +469,7 @@ paths:
         name: body
         required: true
         schema:
-          $ref: '#/definitions/handler.scheduleForm'
+          $ref: '#/definitions/schedule.scheduleForm'
       produces:
       - application/json
       responses:
@@ -496,7 +530,7 @@ paths:
         name: body
         required: true
         schema:
-          $ref: '#/definitions/handler.taskForm'
+          $ref: '#/definitions/task.taskForm'
       produces:
       - application/json
       responses:

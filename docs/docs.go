@@ -35,7 +35,7 @@ const docTemplate = `{
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "$ref": "#/definitions/handler.forgotPasswordForm"
+                            "$ref": "#/definitions/auth.forgotPasswordForm"
                         }
                     }
                 ],
@@ -66,7 +66,7 @@ const docTemplate = `{
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "$ref": "#/definitions/handler.loginForm"
+                            "$ref": "#/definitions/auth.loginForm"
                         }
                     }
                 ],
@@ -95,6 +95,40 @@ const docTemplate = `{
                 ],
                 "summary": "Get my info",
                 "operationId": "me",
+                "responses": {
+                    "200": {
+                        "description": "OK"
+                    }
+                }
+            },
+            "put": {
+                "security": [
+                    {
+                        "ApiKeyAuth": []
+                    }
+                ],
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Me"
+                ],
+                "summary": "Update my profile",
+                "operationId": "update-me",
+                "parameters": [
+                    {
+                        "description": "update me json",
+                        "name": "body",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/me.updateMeForm"
+                        }
+                    }
+                ],
                 "responses": {
                     "200": {
                         "description": "OK"
@@ -582,7 +616,7 @@ const docTemplate = `{
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "$ref": "#/definitions/handler.registerForm"
+                            "$ref": "#/definitions/auth.registerForm"
                         }
                     }
                 ],
@@ -618,7 +652,7 @@ const docTemplate = `{
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "$ref": "#/definitions/handler.scheduleForm"
+                            "$ref": "#/definitions/schedule.scheduleForm"
                         }
                     }
                 ],
@@ -713,7 +747,7 @@ const docTemplate = `{
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "$ref": "#/definitions/handler.taskForm"
+                            "$ref": "#/definitions/task.taskForm"
                         }
                     }
                 ],
@@ -810,7 +844,7 @@ const docTemplate = `{
         }
     },
     "definitions": {
-        "handler.forgotPasswordForm": {
+        "auth.forgotPasswordForm": {
             "type": "object",
             "properties": {
                 "email": {
@@ -818,7 +852,7 @@ const docTemplate = `{
                 }
             }
         },
-        "handler.loginForm": {
+        "auth.loginForm": {
             "type": "object",
             "properties": {
                 "email": {
@@ -829,7 +863,7 @@ const docTemplate = `{
                 }
             }
         },
-        "handler.registerForm": {
+        "auth.registerForm": {
             "type": "object",
             "properties": {
                 "confirm_password": {
@@ -846,7 +880,27 @@ const docTemplate = `{
                 }
             }
         },
-        "handler.scheduleForm": {
+        "me.updateMeForm": {
+            "type": "object",
+            "properties": {
+                "email": {
+                    "type": "string"
+                },
+                "name": {
+                    "type": "string"
+                },
+                "password": {
+                    "type": "string"
+                },
+                "phone": {
+                    "type": "string"
+                },
+                "position": {
+                    "type": "string"
+                }
+            }
+        },
+        "schedule.scheduleForm": {
             "type": "object",
             "properties": {
                 "contributor": {
@@ -869,7 +923,7 @@ const docTemplate = `{
                 }
             }
         },
-        "handler.taskForm": {
+        "task.taskForm": {
             "type": "object",
             "properties": {
                 "contributor": {

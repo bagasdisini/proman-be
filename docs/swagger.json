@@ -27,7 +27,7 @@
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "$ref": "#/definitions/handler.forgotPasswordForm"
+                            "$ref": "#/definitions/auth.forgotPasswordForm"
                         }
                     }
                 ],
@@ -58,7 +58,7 @@
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "$ref": "#/definitions/handler.loginForm"
+                            "$ref": "#/definitions/auth.loginForm"
                         }
                     }
                 ],
@@ -87,6 +87,40 @@
                 ],
                 "summary": "Get my info",
                 "operationId": "me",
+                "responses": {
+                    "200": {
+                        "description": "OK"
+                    }
+                }
+            },
+            "put": {
+                "security": [
+                    {
+                        "ApiKeyAuth": []
+                    }
+                ],
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Me"
+                ],
+                "summary": "Update my profile",
+                "operationId": "update-me",
+                "parameters": [
+                    {
+                        "description": "update me json",
+                        "name": "body",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/me.updateMeForm"
+                        }
+                    }
+                ],
                 "responses": {
                     "200": {
                         "description": "OK"
@@ -574,7 +608,7 @@
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "$ref": "#/definitions/handler.registerForm"
+                            "$ref": "#/definitions/auth.registerForm"
                         }
                     }
                 ],
@@ -610,7 +644,7 @@
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "$ref": "#/definitions/handler.scheduleForm"
+                            "$ref": "#/definitions/schedule.scheduleForm"
                         }
                     }
                 ],
@@ -705,7 +739,7 @@
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "$ref": "#/definitions/handler.taskForm"
+                            "$ref": "#/definitions/task.taskForm"
                         }
                     }
                 ],
@@ -802,7 +836,7 @@
         }
     },
     "definitions": {
-        "handler.forgotPasswordForm": {
+        "auth.forgotPasswordForm": {
             "type": "object",
             "properties": {
                 "email": {
@@ -810,7 +844,7 @@
                 }
             }
         },
-        "handler.loginForm": {
+        "auth.loginForm": {
             "type": "object",
             "properties": {
                 "email": {
@@ -821,7 +855,7 @@
                 }
             }
         },
-        "handler.registerForm": {
+        "auth.registerForm": {
             "type": "object",
             "properties": {
                 "confirm_password": {
@@ -838,7 +872,27 @@
                 }
             }
         },
-        "handler.scheduleForm": {
+        "me.updateMeForm": {
+            "type": "object",
+            "properties": {
+                "email": {
+                    "type": "string"
+                },
+                "name": {
+                    "type": "string"
+                },
+                "password": {
+                    "type": "string"
+                },
+                "phone": {
+                    "type": "string"
+                },
+                "position": {
+                    "type": "string"
+                }
+            }
+        },
+        "schedule.scheduleForm": {
             "type": "object",
             "properties": {
                 "contributor": {
@@ -861,7 +915,7 @@
                 }
             }
         },
-        "handler.taskForm": {
+        "task.taskForm": {
             "type": "object",
             "properties": {
                 "contributor": {

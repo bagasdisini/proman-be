@@ -10,7 +10,7 @@ import (
 	"proman-backend/internal/pkg/context"
 	"proman-backend/internal/pkg/log"
 	_mongo "proman-backend/internal/pkg/mongo"
-	util2 "proman-backend/internal/pkg/util"
+	"proman-backend/internal/pkg/util"
 )
 
 type Handler struct {
@@ -31,6 +31,7 @@ func NewHandler(e *echo.Echo, db *mongo.Database) *Handler {
 	me := e.Group("/api", context.ContextHandler)
 
 	me.GET("/me", h.me)
+	me.PUT("/me", h.updateMe)
 
 	me.GET("/me/projects", h.myProjects)
 	me.GET("/me/project/count", h.myProjectCount)
@@ -66,11 +67,47 @@ func (h *Handler) me(c echo.Context) error {
 		log.Errorf("Error finding user: %v", err)
 		return echo.NewHTTPError(http.StatusInternalServerError, "There was an error, please try again")
 	}
-
-	if user.IsDeleted {
-		return echo.NewHTTPError(http.StatusUnauthorized, "User is deleted")
-	}
 	return c.JSON(http.StatusOK, user)
+}
+
+// Me
+// @Tags Me
+// @Summary Update my profile
+// @ID update-me
+// @Router /api/me [put]
+// @Accept json
+// @Param body body updateMeForm true "update me json"
+// @Produce json
+// @Success 200
+// @Security ApiKeyAuth
+func (h *Handler) updateMe(c echo.Context) error {
+	uc := c.(*context.Context)
+	updateMeForm, err := newUpdateMeForm(c)
+	if err != nil {
+		return err
+	}
+
+	user, err := h.userRepo.FindOneByID(uc.Claims.IDAsObjectID)
+	if err != nil {
+		if errors.Is(err, mongo.ErrNoDocuments) {
+			return echo.NewHTTPError(http.StatusNotFound, "User not found")
+		}
+		log.Errorf("Error finding user: %v", err)
+		return echo.NewHTTPError(http.StatusInternalServerError, "There was an error, please try again")
+	}
+
+	user.Name = updateMeForm.Name
+	user.Email = updateMeForm.Email
+	user.Password = util.CryptPassword(updateMeForm.Password)
+	user.Position = updateMeForm.Position
+	user.Phone = updateMeForm.Phone
+
+	doc, err := h.userRepo.Update(user)
+	if err != nil {
+		log.Errorf("Error updating user: %v", err)
+		return echo.NewHTTPError(http.StatusInternalServerError, "There was an error, please try again")
+	}
+	return c.JSON(http.StatusOK, doc)
 }
 
 // My Schedule
@@ -89,7 +126,7 @@ func (h *Handler) me(c echo.Context) error {
 func (h *Handler) mySchedule(c echo.Context) error {
 	uc := c.(*context.Context)
 
-	cq := util2.NewCommonQuery(c)
+	cq := util.NewCommonQuery(c)
 	cq.UserId = uc.Claims.IDAsObjectID
 
 	schedules, err := h.scheduleRepo.FindAll(cq)
@@ -122,7 +159,7 @@ func (h *Handler) mySchedule(c echo.Context) error {
 func (h *Handler) myProjects(c echo.Context) error {
 	uc := c.(*context.Context)
 
-	cq := util2.NewCommonQuery(c)
+	cq := util.NewCommonQuery(c)
 	cq.UserId = uc.Claims.IDAsObjectID
 
 	projects, err := h.projectRepo.FindAll(cq)
@@ -160,7 +197,7 @@ func (h *Handler) myProjects(c echo.Context) error {
 func (h *Handler) myProjectCount(c echo.Context) error {
 	uc := c.(*context.Context)
 
-	cq := util2.NewCommonQuery(c)
+	cq := util.NewCommonQuery(c)
 	cq.UserId = uc.Claims.IDAsObjectID
 
 	count, err := h.projectRepo.CountProject(cq)
@@ -187,7 +224,7 @@ func (h *Handler) myProjectCount(c echo.Context) error {
 func (h *Handler) myProjectCountByType(c echo.Context) error {
 	uc := c.(*context.Context)
 
-	cq := util2.NewCommonQuery(c)
+	cq := util.NewCommonQuery(c)
 	cq.UserId = uc.Claims.IDAsObjectID
 
 	count, err := h.projectRepo.CountProjectTypes(cq)
@@ -213,7 +250,7 @@ func (h *Handler) myProjectCountByType(c echo.Context) error {
 func (h *Handler) myTasks(c echo.Context) error {
 	uc := c.(*context.Context)
 
-	cq := util2.NewCommonQuery(c)
+	cq := util.NewCommonQuery(c)
 	cq.UserId = uc.Claims.IDAsObjectID
 
 	tasks, err := h.taskRepo.FindAll(cq)
@@ -239,7 +276,7 @@ func (h *Handler) myTasks(c echo.Context) error {
 func (h *Handler) myTaskCount(c echo.Context) error {
 	uc := c.(*context.Context)
 
-	cq := util2.NewCommonQuery(c)
+	cq := util.NewCommonQuery(c)
 	cq.UserId = uc.Claims.IDAsObjectID
 
 	count, err := h.taskRepo.CountTask(cq)
@@ -271,12 +308,12 @@ func (h *Handler) myTaskOverview(c echo.Context) error {
 	var doc []repository.TaskOverview
 	uc := c.(*context.Context)
 
-	cq := util2.NewCommonQuery(c)
+	cq := util.NewCommonQuery(c)
 	cq.UserId = uc.Claims.IDAsObjectID
 
 	for _, v := range []int{-7, -6, -5, -4, -3, -2, -1, 0} {
-		cq.Start = util2.StartOfWeek(v)
-		cq.End = util2.EndOfWeek(v)
+		cq.Start = util.StartOfWeek(v)
+		cq.End = util.EndOfWeek(v)
 
 		count, err := h.taskRepo.CountTask(cq)
 		if err != nil || len(*count) == 0 {
@@ -310,7 +347,7 @@ func (h *Handler) myTaskOverview(c echo.Context) error {
 func (h *Handler) myTaskStatus(c echo.Context) error {
 	uc := c.(*context.Context)
 
-	cq := util2.NewCommonQuery(c)
+	cq := util.NewCommonQuery(c)
 	cq.UserId = uc.Claims.IDAsObjectID
 
 	docs := repository.TaskGroup{}
