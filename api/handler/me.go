@@ -3,14 +3,14 @@ package handler
 import (
 	"errors"
 	"github.com/labstack/echo/v4"
-	"go.mongodb.org/mongo-driver/mongo"
+	"go.mongodb.org/mongo-driver/v2/mongo"
 	"net/http"
 	"proman-backend/api/repository"
-	_const "proman-backend/pkg/const"
-	"proman-backend/pkg/context"
-	"proman-backend/pkg/log"
-	_mongo "proman-backend/pkg/mongo"
-	"proman-backend/pkg/util"
+	"proman-backend/internal/pkg/const"
+	"proman-backend/internal/pkg/context"
+	"proman-backend/internal/pkg/log"
+	_mongo "proman-backend/internal/pkg/mongo"
+	util2 "proman-backend/internal/pkg/util"
 )
 
 type MeHandler struct {
@@ -89,7 +89,7 @@ func (h *MeHandler) me(c echo.Context) error {
 func (h *MeHandler) mySchedule(c echo.Context) error {
 	uc := c.(*context.Context)
 
-	cq := util.NewCommonQuery(c)
+	cq := util2.NewCommonQuery(c)
 	cq.UserId = uc.Claims.IDAsObjectID
 
 	schedules, err := h.scheduleRepo.FindAll(cq)
@@ -122,7 +122,7 @@ func (h *MeHandler) mySchedule(c echo.Context) error {
 func (h *MeHandler) myProjects(c echo.Context) error {
 	uc := c.(*context.Context)
 
-	cq := util.NewCommonQuery(c)
+	cq := util2.NewCommonQuery(c)
 	cq.UserId = uc.Claims.IDAsObjectID
 
 	projects, err := h.projectRepo.FindAll(cq)
@@ -160,7 +160,7 @@ func (h *MeHandler) myProjects(c echo.Context) error {
 func (h *MeHandler) myProjectCount(c echo.Context) error {
 	uc := c.(*context.Context)
 
-	cq := util.NewCommonQuery(c)
+	cq := util2.NewCommonQuery(c)
 	cq.UserId = uc.Claims.IDAsObjectID
 
 	count, err := h.projectRepo.CountProject(cq)
@@ -187,7 +187,7 @@ func (h *MeHandler) myProjectCount(c echo.Context) error {
 func (h *MeHandler) myProjectCountByType(c echo.Context) error {
 	uc := c.(*context.Context)
 
-	cq := util.NewCommonQuery(c)
+	cq := util2.NewCommonQuery(c)
 	cq.UserId = uc.Claims.IDAsObjectID
 
 	count, err := h.projectRepo.CountProjectTypes(cq)
@@ -213,7 +213,7 @@ func (h *MeHandler) myProjectCountByType(c echo.Context) error {
 func (h *MeHandler) myTasks(c echo.Context) error {
 	uc := c.(*context.Context)
 
-	cq := util.NewCommonQuery(c)
+	cq := util2.NewCommonQuery(c)
 	cq.UserId = uc.Claims.IDAsObjectID
 
 	tasks, err := h.taskRepo.FindAll(cq)
@@ -239,7 +239,7 @@ func (h *MeHandler) myTasks(c echo.Context) error {
 func (h *MeHandler) myTaskCount(c echo.Context) error {
 	uc := c.(*context.Context)
 
-	cq := util.NewCommonQuery(c)
+	cq := util2.NewCommonQuery(c)
 	cq.UserId = uc.Claims.IDAsObjectID
 
 	count, err := h.taskRepo.CountTask(cq)
@@ -271,12 +271,12 @@ func (h *MeHandler) myTaskOverview(c echo.Context) error {
 	var doc []repository.TaskOverview
 	uc := c.(*context.Context)
 
-	cq := util.NewCommonQuery(c)
+	cq := util2.NewCommonQuery(c)
 	cq.UserId = uc.Claims.IDAsObjectID
 
 	for _, v := range []int{-7, -6, -5, -4, -3, -2, -1, 0} {
-		cq.Start = util.StartOfWeek(v)
-		cq.End = util.EndOfWeek(v)
+		cq.Start = util2.StartOfWeek(v)
+		cq.End = util2.EndOfWeek(v)
 
 		count, err := h.taskRepo.CountTask(cq)
 		if err != nil || len(*count) == 0 {
@@ -310,7 +310,7 @@ func (h *MeHandler) myTaskOverview(c echo.Context) error {
 func (h *MeHandler) myTaskStatus(c echo.Context) error {
 	uc := c.(*context.Context)
 
-	cq := util.NewCommonQuery(c)
+	cq := util2.NewCommonQuery(c)
 	cq.UserId = uc.Claims.IDAsObjectID
 
 	docs := repository.TaskGroup{}

@@ -3,16 +3,16 @@ package handler
 import (
 	"errors"
 	"github.com/labstack/echo/v4"
-	"go.mongodb.org/mongo-driver/bson/primitive"
-	"go.mongodb.org/mongo-driver/mongo"
+	"go.mongodb.org/mongo-driver/v2/bson"
+	"go.mongodb.org/mongo-driver/v2/mongo"
 	"net/http"
 	"proman-backend/api/repository"
-	"proman-backend/internal/config"
-	_const "proman-backend/pkg/const"
-	"proman-backend/pkg/context"
-	"proman-backend/pkg/file"
-	"proman-backend/pkg/log"
-	"proman-backend/pkg/util"
+	"proman-backend/config"
+	"proman-backend/internal/pkg/const"
+	"proman-backend/internal/pkg/context"
+	"proman-backend/internal/pkg/file"
+	"proman-backend/internal/pkg/log"
+	"proman-backend/internal/pkg/util"
 	"strings"
 	"time"
 )
@@ -120,7 +120,7 @@ func (h *ProjectHandler) list(c echo.Context) error {
 func (h *ProjectHandler) detail(c echo.Context) error {
 	id := c.Param("id")
 
-	oId, err := primitive.ObjectIDFromHex(id)
+	oId, err := bson.ObjectIDFromHex(id)
 	if err != nil {
 		return echo.NewHTTPError(http.StatusBadRequest, "Invalid project ID.")
 	}
@@ -162,9 +162,9 @@ func (h *ProjectHandler) create(c echo.Context) error {
 	tokenData := c.(*context.Context)
 
 	ownerIncluded := false
-	contributorsOId := make([]primitive.ObjectID, 0)
+	contributorsOId := make([]bson.ObjectID, 0)
 	for _, user := range strings.Split(form.Contributor, ",") {
-		userOId, err := primitive.ObjectIDFromHex(user)
+		userOId, err := bson.ObjectIDFromHex(user)
 		if err != nil {
 			return echo.NewHTTPError(http.StatusBadRequest, "Invalid contributor.")
 		}
@@ -189,7 +189,7 @@ func (h *ProjectHandler) create(c echo.Context) error {
 	}
 
 	project := repository.Project{
-		ID:          primitive.NewObjectID(),
+		ID:          bson.NewObjectID(),
 		Name:        form.Name,
 		Description: form.Description,
 		Type:        form.Type,
@@ -224,7 +224,7 @@ func (h *ProjectHandler) create(c echo.Context) error {
 func (h *ProjectHandler) delete(c echo.Context) error {
 	id := c.Param("id")
 
-	oId, err := primitive.ObjectIDFromHex(id)
+	oId, err := bson.ObjectIDFromHex(id)
 	if err != nil {
 		return echo.NewHTTPError(http.StatusBadRequest, "Invalid project ID.")
 	}

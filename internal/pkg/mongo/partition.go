@@ -1,8 +1,8 @@
 package mongo
 
 import (
-	"go.mongodb.org/mongo-driver/bson/primitive"
-	"go.mongodb.org/mongo-driver/mongo"
+	"go.mongodb.org/mongo-driver/v2/bson"
+	"go.mongodb.org/mongo-driver/v2/mongo"
 	"sync"
 )
 
@@ -20,7 +20,7 @@ func NewPartitionRepository(db *mongo.Database, prefixName string) *PartitionRep
 	}
 }
 
-func (r *PartitionRepository) Coll(partitionId primitive.ObjectID) *mongo.Collection {
+func (r *PartitionRepository) Coll(partitionId bson.ObjectID) *mongo.Collection {
 	hex := partitionId.Hex()
 	if coll, ok := r.collections.Load(hex); ok {
 		return coll.(*mongo.Collection)

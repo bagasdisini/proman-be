@@ -1,8 +1,8 @@
 package mongo
 
 import (
-	"go.mongodb.org/mongo-driver/bson"
-	"go.mongodb.org/mongo-driver/mongo/options"
+	"go.mongodb.org/mongo-driver/v2/bson"
+	"go.mongodb.org/mongo-driver/v2/mongo/options"
 	"math"
 )
 
@@ -14,7 +14,7 @@ type PaginationResult struct {
 	Limit  int64       `json:"limit"`
 }
 
-func BuildPaginateOrderOptionByField(sortParam bson.D, page, limit int64) (*options.FindOptions, error) {
+func BuildPaginateOrderOptionByField(sortParam bson.D, page, limit int64) (*options.FindOptionsBuilder, error) {
 	if page <= 0 {
 		page = 1
 	}

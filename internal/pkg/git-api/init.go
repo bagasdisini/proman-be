@@ -1,9 +1,9 @@
 package git_api
 
 import (
-	"github.com/xanzy/go-gitlab"
-	"proman-backend/internal/config"
-	"proman-backend/pkg/log"
+	gitlab "gitlab.com/gitlab-org/api/client-go"
+	"proman-backend/config"
+	"proman-backend/internal/pkg/log"
 )
 
 var Client *gitlab.Client

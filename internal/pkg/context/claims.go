@@ -4,13 +4,13 @@ import (
 	"fmt"
 	"github.com/golang-jwt/jwt"
 	"github.com/labstack/echo/v4"
-	"go.mongodb.org/mongo-driver/bson/primitive"
+	"go.mongodb.org/mongo-driver/v2/bson"
 	"net/http"
 	"proman-backend/api/repository"
-	"proman-backend/internal/config"
+	"proman-backend/config"
 	"proman-backend/internal/database"
-	_const "proman-backend/pkg/const"
-	"proman-backend/pkg/log"
+	"proman-backend/internal/pkg/const"
+	"proman-backend/internal/pkg/log"
 	"strings"
 	"sync"
 	"time"
@@ -21,10 +21,10 @@ var userRepo *repository.UserCollRepository
 
 type UserClaims struct {
 	jwt.StandardClaims
-	ID                 string             `json:"id"`
-	IDAsObjectID       primitive.ObjectID `json:"-"`
-	Role               string             `json:"role"`
-	ExpiredDateInMilis int64              `json:"expiredDateInMilis"`
+	ID                 string        `json:"id"`
+	IDAsObjectID       bson.ObjectID `json:"-"`
+	Role               string        `json:"role"`
+	ExpiredDateInMilis int64         `json:"expiredDateInMilis"`
 }
 
 func (u *UserClaims) IsAdmin() bool {
@@ -82,7 +82,7 @@ func NewUserClaimsFromString(s string) (*UserClaims, error) {
 			return nil, echo.ErrUnauthorized
 		}
 
-		IDAsObjectID, err := primitive.ObjectIDFromHex(claims.ID)
+		IDAsObjectID, err := bson.ObjectIDFromHex(claims.ID)
 		if err != nil {
 			return nil, err
 		}

@@ -8,7 +8,7 @@ import (
 	"mime/multipart"
 	"net/http"
 	"os"
-	"proman-backend/pkg/log"
+	"proman-backend/internal/pkg/log"
 	"strings"
 	"time"
 )

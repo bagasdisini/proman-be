@@ -2,25 +2,24 @@ package repository
 
 import (
 	"context"
-	"go.mongodb.org/mongo-driver/bson"
-	"go.mongodb.org/mongo-driver/bson/primitive"
-	"go.mongodb.org/mongo-driver/mongo"
-	_const "proman-backend/pkg/const"
-	"proman-backend/pkg/util"
+	"go.mongodb.org/mongo-driver/v2/bson"
+	"go.mongodb.org/mongo-driver/v2/mongo"
+	"proman-backend/internal/pkg/const"
+	"proman-backend/internal/pkg/util"
 	"time"
 )
 
 type Task struct {
-	ID          primitive.ObjectID   `json:"_id" bson:"_id"`
-	Name        string               `json:"name" bson:"name"`
-	Description string               `json:"description" bson:"description"`
-	StartDate   time.Time            `json:"start_date" bson:"start_date"`
-	EndDate     time.Time            `json:"end_date" bson:"end_date"`
-	Contributor []primitive.ObjectID `json:"contributor" bson:"contributor"`
-	Status      string               `json:"status" bson:"status"` // active, testing, completed, cancelled
-	ProjectID   primitive.ObjectID   `json:"project_id" bson:"project_id"`
-	CreatedAt   time.Time            `json:"created_at" bson:"created_at"`
-	IsDeleted   bool                 `json:"-" bson:"is_deleted"`
+	ID          bson.ObjectID   `json:"_id" bson:"_id"`
+	Name        string          `json:"name" bson:"name"`
+	Description string          `json:"description" bson:"description"`
+	StartDate   time.Time       `json:"start_date" bson:"start_date"`
+	EndDate     time.Time       `json:"end_date" bson:"end_date"`
+	Contributor []bson.ObjectID `json:"contributor" bson:"contributor"`
+	Status      string          `json:"status" bson:"status"` // active, testing, completed, cancelled
+	ProjectID   bson.ObjectID   `json:"project_id" bson:"project_id"`
+	CreatedAt   time.Time       `json:"created_at" bson:"created_at"`
+	IsDeleted   bool            `json:"-" bson:"is_deleted"`
 }
 
 type TaskGroup struct {
@@ -66,8 +65,8 @@ func (r *TaskCollRepository) FindAll(cq *util.CommonQuery) ([]Task, error) {
 
 	if len(cq.Q) > 0 {
 		filter["$or"] = []bson.M{
-			{"name": bson.M{"$regex": primitive.Regex{Pattern: cq.Q, Options: "i"}}},
-			{"description": bson.M{"$regex": primitive.Regex{Pattern: cq.Q, Options: "i"}}},
+			{"name": bson.M{"$regex": bson.Regex{Pattern: cq.Q, Options: "i"}}},
+			{"description": bson.M{"$regex": bson.Regex{Pattern: cq.Q, Options: "i"}}},
 		}
 	}
 
@@ -75,11 +74,11 @@ func (r *TaskCollRepository) FindAll(cq *util.CommonQuery) ([]Task, error) {
 		filter["status"] = cq.Status
 	}
 
-	if cq.UserId != primitive.NilObjectID {
+	if cq.UserId != bson.NilObjectID {
 		filter["contributor"] = cq.UserId
 	}
 
-	if cq.ProjectId != primitive.NilObjectID {
+	if cq.ProjectId != bson.NilObjectID {
 		filter["project_id"] = cq.ProjectId
 	}
 
@@ -117,7 +116,7 @@ func (r *TaskCollRepository) FindAll(cq *util.CommonQuery) ([]Task, error) {
 	return tasks, nil
 }
 
-func (r *TaskCollRepository) FindOneByID(_id primitive.ObjectID) (*Task, error) {
+func (r *TaskCollRepository) FindOneByID(_id bson.ObjectID) (*Task, error) {
 	var user *Task
 	filter := bson.M{
 		"_id":        _id,
@@ -146,8 +145,8 @@ func (r *TaskCollRepository) CountTask(cq *util.CommonQuery) (*[]CountTaskDetail
 
 	if len(cq.Q) > 0 {
 		matchStage = append(matchStage, bson.E{Key: "$or", Value: bson.A{
-			bson.D{{"name", primitive.Regex{Pattern: cq.Q, Options: "i"}}},
-			bson.D{{"description", primitive.Regex{Pattern: cq.Q, Options: "i"}}},
+			bson.D{{"name", bson.Regex{Pattern: cq.Q, Options: "i"}}},
+			bson.D{{"description", bson.Regex{Pattern: cq.Q, Options: "i"}}},
 		}})
 	}
 
@@ -155,7 +154,7 @@ func (r *TaskCollRepository) CountTask(cq *util.CommonQuery) (*[]CountTaskDetail
 		matchStage = append(matchStage, bson.E{Key: "status", Value: cq.Status})
 	}
 
-	if cq.UserId != primitive.NilObjectID {
+	if cq.UserId != bson.NilObjectID {
 		matchStage = append(matchStage, bson.E{Key: "contributor", Value: cq.UserId})
 	}
 
@@ -215,10 +214,10 @@ func (r *TaskCollRepository) CountUserTask(userRepo *UserCollRepository) (*Count
 		return nil, err
 	}
 
-	var contributorsWithTasks []primitive.ObjectID
+	var contributorsWithTasks []bson.ObjectID
 	for cursor.Next(context.TODO()) {
 		var result struct {
-			ID []primitive.ObjectID `bson:"_id"`
+			ID []bson.ObjectID `bson:"_id"`
 		}
 		if err := cursor.Decode(&result); err != nil {
 			return nil, err
@@ -239,7 +238,7 @@ func (r *TaskCollRepository) CountUserTask(userRepo *UserCollRepository) (*Count
 	return result, nil
 }
 
-func (r *TaskCollRepository) DeleteOneByID(_id primitive.ObjectID) error {
+func (r *TaskCollRepository) DeleteOneByID(_id bson.ObjectID) error {
 	filter := bson.M{
 		"_id": _id,
 	}
@@ -256,7 +255,7 @@ func (r *TaskCollRepository) DeleteOneByID(_id primitive.ObjectID) error {
 	return nil
 }
 
-func (r *TaskCollRepository) DeleteAllByProjectID(projectID primitive.ObjectID) error {
+func (r *TaskCollRepository) DeleteAllByProjectID(projectID bson.ObjectID) error {
 	filter := bson.M{
 		"project_id": projectID,
 	}

@@ -3,11 +3,11 @@ package handler
 import (
 	"errors"
 	"github.com/labstack/echo/v4"
-	"go.mongodb.org/mongo-driver/mongo"
+	"go.mongodb.org/mongo-driver/v2/mongo"
 	"net/http"
 	"proman-backend/api/repository"
-	"proman-backend/pkg/context"
-	"proman-backend/pkg/log"
+	"proman-backend/internal/pkg/context"
+	"proman-backend/internal/pkg/log"
 )
 
 type UserHandler struct {

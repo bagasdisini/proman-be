@@ -3,27 +3,26 @@ package repository
 import (
 	"context"
 	"encoding/json"
-	"go.mongodb.org/mongo-driver/bson"
-	"go.mongodb.org/mongo-driver/bson/primitive"
-	"go.mongodb.org/mongo-driver/mongo"
-	"proman-backend/internal/config"
+	"go.mongodb.org/mongo-driver/v2/bson"
+	"go.mongodb.org/mongo-driver/v2/mongo"
+	"proman-backend/config"
 	"strings"
 	"time"
 )
 
 type User struct {
-	ID           primitive.ObjectID `json:"_id" bson:"_id"`
-	Email        string             `json:"email" bson:"email"`
-	Password     string             `json:"password" bson:"password"`
-	Name         string             `json:"name" bson:"name"`
-	Role         string             `json:"role" bson:"role"`
-	Position     string             `json:"position" bson:"position"`
-	Avatar       string             `json:"avatar" bson:"avatar"`
-	Phone        string             `json:"phone" bson:"phone"`
-	CreatedAt    time.Time          `json:"created_at" bson:"created_at"`
-	IsDeleted    bool               `json:"-" bson:"is_deleted"`
-	TotalProject int                `json:"total_project" bson:"total_project"`
-	TotalTask    int                `json:"total_task" bson:"total_task"`
+	ID           bson.ObjectID `json:"_id" bson:"_id"`
+	Email        string        `json:"email" bson:"email"`
+	Password     string        `json:"password" bson:"password"`
+	Name         string        `json:"name" bson:"name"`
+	Role         string        `json:"role" bson:"role"`
+	Position     string        `json:"position" bson:"position"`
+	Avatar       string        `json:"avatar" bson:"avatar"`
+	Phone        string        `json:"phone" bson:"phone"`
+	CreatedAt    time.Time     `json:"created_at" bson:"created_at"`
+	IsDeleted    bool          `json:"-" bson:"is_deleted"`
+	TotalProject int           `json:"total_project" bson:"total_project"`
+	TotalTask    int           `json:"total_task" bson:"total_task"`
 }
 
 func (u *User) MarshalJSON() ([]byte, error) {
@@ -135,7 +134,7 @@ func (r *UserCollRepository) FindAllUsers() (*[]User, error) {
 	return &users, nil
 }
 
-func (r *UserCollRepository) FindOneByID(_id primitive.ObjectID) (*User, error) {
+func (r *UserCollRepository) FindOneByID(_id bson.ObjectID) (*User, error) {
 	var user *User
 	filter := bson.M{
 		"_id":        _id,
@@ -170,7 +169,7 @@ func (r *UserCollRepository) Insert(userData *User) (*User, error) {
 		return nil, err
 	}
 
-	insertedID := dataInsert.InsertedID.(primitive.ObjectID)
+	insertedID := dataInsert.InsertedID.(bson.ObjectID)
 	err = r.coll.FindOne(context.TODO(), bson.M{"_id": insertedID}).Decode(&data)
 	if err != nil {
 		return nil, err

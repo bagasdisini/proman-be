@@ -2,7 +2,7 @@ package util
 
 import (
 	"golang.org/x/crypto/bcrypt"
-	"proman-backend/pkg/log"
+	"proman-backend/internal/pkg/log"
 )
 
 // CheckPassword is function to compare hashed and plain text

@@ -2,13 +2,13 @@ package handler
 
 import (
 	"github.com/labstack/echo/v4"
-	"go.mongodb.org/mongo-driver/bson/primitive"
-	"go.mongodb.org/mongo-driver/mongo"
+	"go.mongodb.org/mongo-driver/v2/bson"
+	"go.mongodb.org/mongo-driver/v2/mongo"
 	"net/http"
 	"proman-backend/api/repository"
-	_const "proman-backend/pkg/const"
-	"proman-backend/pkg/context"
-	"proman-backend/pkg/log"
+	"proman-backend/internal/pkg/const"
+	"proman-backend/internal/pkg/context"
+	"proman-backend/internal/pkg/log"
 	"strings"
 	"time"
 )
@@ -49,7 +49,7 @@ func newTaskForm(c echo.Context) (*taskForm, error) {
 	if form.EndDate <= 0 {
 		return nil, echo.NewHTTPError(http.StatusBadRequest, "Invalid end date.")
 	}
-	_, err := primitive.ObjectIDFromHex(form.ProjectID)
+	_, err := bson.ObjectIDFromHex(form.ProjectID)
 	if err != nil {
 		return nil, echo.NewHTTPError(http.StatusBadRequest, "Invalid project ID.")
 	}
@@ -90,22 +90,22 @@ func (h *TaskHandler) create(c echo.Context) error {
 		return err
 	}
 
-	contributorsOId := make([]primitive.ObjectID, 0)
+	contributorsOId := make([]bson.ObjectID, 0)
 	for _, user := range strings.Split(form.Contributor, ",") {
-		userOId, err := primitive.ObjectIDFromHex(user)
+		userOId, err := bson.ObjectIDFromHex(user)
 		if err != nil {
 			return echo.NewHTTPError(http.StatusBadRequest, "Invalid contributor.")
 		}
 		contributorsOId = append(contributorsOId, userOId)
 	}
 
-	projectOId, err := primitive.ObjectIDFromHex(form.ProjectID)
+	projectOId, err := bson.ObjectIDFromHex(form.ProjectID)
 	if err != nil {
 		return echo.NewHTTPError(http.StatusBadRequest, "Invalid project ID.")
 	}
 
 	task := repository.Task{
-		ID:          primitive.NewObjectID(),
+		ID:          bson.NewObjectID(),
 		Name:        form.Name,
 		Description: form.Description,
 		StartDate:   time.UnixMilli(form.StartDate),
@@ -141,7 +141,7 @@ func (h *TaskHandler) delete(c echo.Context) error {
 		return echo.NewHTTPError(http.StatusBadRequest, "Task ID cannot be empty.")
 	}
 
-	objectID, err := primitive.ObjectIDFromHex(id)
+	objectID, err := bson.ObjectIDFromHex(id)
 	if err != nil {
 		return echo.NewHTTPError(http.StatusBadRequest, "Invalid task ID.")
 	}

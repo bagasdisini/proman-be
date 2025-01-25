@@ -8,8 +8,8 @@ import (
 	"github.com/aws/aws-sdk-go/service/s3/s3manager"
 	"os"
 	"path/filepath"
-	"proman-backend/internal/config"
-	"proman-backend/pkg/log"
+	"proman-backend/config"
+	"proman-backend/internal/pkg/log"
 	"strings"
 )
 

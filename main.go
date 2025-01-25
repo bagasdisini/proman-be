@@ -9,21 +9,21 @@ import (
 	"github.com/labstack/echo/v4"
 	"github.com/labstack/echo/v4/middleware"
 	echoswagger "github.com/swaggo/echo-swagger"
-	"go.mongodb.org/mongo-driver/bson/primitive"
-	"go.mongodb.org/mongo-driver/mongo"
+	"go.mongodb.org/mongo-driver/v2/bson"
+	"go.mongodb.org/mongo-driver/v2/mongo"
 	"golang.org/x/crypto/ssh/terminal"
 	"net/http"
 	"os"
 	"proman-backend/api/handler"
 	"proman-backend/api/repository"
+	"proman-backend/config"
 	"proman-backend/docs"
-	"proman-backend/internal/config"
 	"proman-backend/internal/database"
-	_const "proman-backend/pkg/const"
-	"proman-backend/pkg/file"
-	git_api "proman-backend/pkg/git-api"
-	"proman-backend/pkg/log"
-	"proman-backend/pkg/util"
+	"proman-backend/internal/pkg/const"
+	"proman-backend/internal/pkg/file"
+	"proman-backend/internal/pkg/git-api"
+	"proman-backend/internal/pkg/log"
+	"proman-backend/internal/pkg/util"
 	"proman-backend/version"
 	"strings"
 	"syscall"
@@ -132,7 +132,7 @@ func initAdmin(db *mongo.Database) {
 	password = strings.TrimSuffix(password, "\n")
 
 	user := &repository.User{
-		ID:        primitive.NewObjectID(),
+		ID:        bson.NewObjectID(),
 		Email:     "admin@admin.com",
 		Password:  util.CryptPassword(password),
 		Name:      "admin",

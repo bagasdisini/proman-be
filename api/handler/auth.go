@@ -4,15 +4,15 @@ import (
 	"errors"
 	"github.com/asaskevich/govalidator"
 	"github.com/labstack/echo/v4"
-	"go.mongodb.org/mongo-driver/bson/primitive"
-	"go.mongodb.org/mongo-driver/mongo"
+	"go.mongodb.org/mongo-driver/v2/bson"
+	"go.mongodb.org/mongo-driver/v2/mongo"
 	"net/http"
 	"proman-backend/api/repository"
-	_const "proman-backend/pkg/const"
-	"proman-backend/pkg/context"
-	"proman-backend/pkg/log"
-	"proman-backend/pkg/mail"
-	"proman-backend/pkg/util"
+	"proman-backend/internal/pkg/const"
+	"proman-backend/internal/pkg/context"
+	"proman-backend/internal/pkg/log"
+	mail2 "proman-backend/internal/pkg/mail"
+	util2 "proman-backend/internal/pkg/util"
 	"strings"
 	"time"
 )
@@ -145,7 +145,7 @@ func (h *AuthHandler) login(c echo.Context) error {
 		return echo.NewHTTPError(http.StatusInternalServerError, "There was an error, please try again")
 	}
 
-	if !util.CheckPassword(u.Password, form.Password) {
+	if !util2.CheckPassword(u.Password, form.Password) {
 		return echo.NewHTTPError(http.StatusBadRequest, "Wrong username/email or password")
 	}
 
@@ -183,9 +183,9 @@ func (h *AuthHandler) register(c echo.Context) error {
 	}
 
 	user := &repository.User{
-		ID:        primitive.NewObjectID(),
+		ID:        bson.NewObjectID(),
 		Email:     form.Email,
-		Password:  util.CryptPassword(form.Password),
+		Password:  util2.CryptPassword(form.Password),
 		Name:      form.Name,
 		Role:      _const.RoleDeveloper,
 		Position:  _const.PositionOther,
@@ -225,8 +225,8 @@ func (h *AuthHandler) forgotPassword(c echo.Context) error {
 		return echo.NewHTTPError(http.StatusInternalServerError, "There was an error, please try again")
 	}
 
-	newPassword := util.RandomString(10)
-	u.Password = util.CryptPassword(newPassword)
+	newPassword := util2.RandomString(10)
+	u.Password = util2.CryptPassword(newPassword)
 
 	_, err = h.userRepo.Update(u)
 	if err != nil {
@@ -235,11 +235,11 @@ func (h *AuthHandler) forgotPassword(c echo.Context) error {
 	}
 
 	go func(email string, template string) {
-		err = mail.SendMail(nil, []string{email}, "New Password", template)
+		err = mail2.SendMail(nil, []string{email}, "New Password", template)
 		if err != nil {
 			log.Errorf("Error sending email: %v", err)
 			return
 		}
-	}(u.Email, mail.ForgotTemplate(newPassword))
+	}(u.Email, mail2.ForgotTemplate(newPassword))
 	return c.JSON(http.StatusOK, map[string]string{"message": "New password has been sent to your email"})
 }

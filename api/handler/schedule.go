@@ -3,13 +3,13 @@ package handler
 import (
 	"errors"
 	"github.com/labstack/echo/v4"
-	"go.mongodb.org/mongo-driver/bson/primitive"
-	"go.mongodb.org/mongo-driver/mongo"
+	"go.mongodb.org/mongo-driver/v2/bson"
+	"go.mongodb.org/mongo-driver/v2/mongo"
 	"net/http"
 	"proman-backend/api/repository"
-	"proman-backend/pkg/context"
-	"proman-backend/pkg/log"
-	"proman-backend/pkg/util"
+	"proman-backend/internal/pkg/context"
+	"proman-backend/internal/pkg/log"
+	"proman-backend/internal/pkg/util"
 	"strings"
 	"time"
 )
@@ -117,9 +117,9 @@ func (h *ScheduleHandler) create(c echo.Context) error {
 		return err
 	}
 
-	contributorsOId := make([]primitive.ObjectID, 0)
+	contributorsOId := make([]bson.ObjectID, 0)
 	for _, user := range strings.Split(form.Contributor, ",") {
-		userOId, err := primitive.ObjectIDFromHex(user)
+		userOId, err := bson.ObjectIDFromHex(user)
 		if err != nil {
 			return echo.NewHTTPError(http.StatusBadRequest, "Invalid contributor.")
 		}
@@ -127,7 +127,7 @@ func (h *ScheduleHandler) create(c echo.Context) error {
 	}
 
 	schedule := &repository.Schedule{
-		ID:          primitive.NewObjectID(),
+		ID:          bson.NewObjectID(),
 		Name:        form.Name,
 		Description: form.Description,
 		StartDate:   time.UnixMilli(form.StartDate),

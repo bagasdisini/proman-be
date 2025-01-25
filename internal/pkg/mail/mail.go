@@ -2,8 +2,8 @@ package mail
 
 import (
 	"gopkg.in/gomail.v2"
-	"proman-backend/internal/config"
-	"proman-backend/pkg/log"
+	"proman-backend/config"
+	"proman-backend/internal/pkg/log"
 )
 
 func SendMail(cc, receiver []string, subject string, body string) error {

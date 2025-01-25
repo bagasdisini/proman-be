@@ -2,7 +2,7 @@ package util
 
 import (
 	"github.com/labstack/echo/v4"
-	"go.mongodb.org/mongo-driver/bson/primitive"
+	"go.mongodb.org/mongo-driver/v2/bson"
 	"math"
 	"strconv"
 	"strings"
@@ -13,8 +13,8 @@ type CommonQuery struct {
 	Q         string
 	Type      string
 	Status    string
-	UserId    primitive.ObjectID
-	ProjectId primitive.ObjectID
+	UserId    bson.ObjectID
+	ProjectId bson.ObjectID
 	Start     time.Time
 	End       time.Time
 
@@ -39,7 +39,7 @@ func NewCommonQuery(c echo.Context) *CommonQuery {
 		Q:      qParam,
 		Status: statusParam,
 		Type:   typeParam,
-		UserId: primitive.NilObjectID,
+		UserId: bson.NilObjectID,
 		Start:  time.UnixMilli(0),
 		End:    time.Date(time.Now().Year(), time.Now().Month(), time.Now().Day(), 23, 59, 59, 0, time.Local),
 
@@ -49,14 +49,14 @@ func NewCommonQuery(c echo.Context) *CommonQuery {
 	}
 
 	if len(userIdParam) > 0 {
-		userId, err := primitive.ObjectIDFromHex(userIdParam)
+		userId, err := bson.ObjectIDFromHex(userIdParam)
 		if err == nil {
 			cq.UserId = userId
 		}
 	}
 
 	if len(projectIdParam) > 0 {
-		projectId, err := primitive.ObjectIDFromHex(projectIdParam)
+		projectId, err := bson.ObjectIDFromHex(projectIdParam)
 		if err == nil {
 			cq.ProjectId = projectId
 		}
@@ -114,8 +114,8 @@ func (dr *CommonQuery) ResetAll() *CommonQuery {
 	dr.Q = ""
 	dr.Status = ""
 	dr.Type = ""
-	dr.UserId = primitive.NilObjectID
-	dr.ProjectId = primitive.NilObjectID
+	dr.UserId = bson.NilObjectID
+	dr.ProjectId = bson.NilObjectID
 	dr.Start = time.UnixMilli(0)
 	dr.End = time.Date(time.Now().Year(), time.Now().Month(), time.Now().Day(), 23, 59, 59, 0, time.Local)
 	dr.Sort = 1
