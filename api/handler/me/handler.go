@@ -9,6 +9,7 @@ import (
 	"proman-backend/config"
 	"proman-backend/internal/pkg/const"
 	"proman-backend/internal/pkg/context"
+	"proman-backend/internal/pkg/file"
 	"proman-backend/internal/pkg/log"
 	_mongo "proman-backend/internal/pkg/mongo"
 	"proman-backend/internal/pkg/util"
@@ -80,13 +81,18 @@ func (h *Handler) me(c echo.Context) error {
 // @ID update-me
 // @Router /api/me [put]
 // @Accept json
-// @Param body body updateMeForm true "update me json"
+// @Param name formData string false "name"
+// @Param email formData string false "email"
+// @Param position formData string false "position"
+// @Param phone formData string false "phone"
+// @Param avatar formData file false "avatar"
+// @Param verification_code formData string false "verification_code"
 // @Produce json
 // @Success 200
 // @Security ApiKeyAuth
 func (h *Handler) updateMe(c echo.Context) error {
 	uc := c.(*context.Context)
-	updateMeForm, err := newUpdateMeForm(c)
+	docForm, err := newUpdateMeForm(c)
 	if err != nil {
 		return err
 	}
@@ -100,11 +106,38 @@ func (h *Handler) updateMe(c echo.Context) error {
 		return echo.NewHTTPError(http.StatusInternalServerError, "There was an error, please try again")
 	}
 
-	user.Name = updateMeForm.Name
-	user.Email = updateMeForm.Email
-	user.Password = util.CryptPassword(updateMeForm.Password)
-	user.Position = updateMeForm.Position
-	user.Phone = updateMeForm.Phone
+	if config.Vcode.CheckEnable {
+		code, err := h.codeRepo.FindActiveOneByUserID(uc.Claims.IDAsObjectID)
+		if err != nil {
+			if errors.Is(err, mongo.ErrNoDocuments) {
+				return echo.NewHTTPError(http.StatusBadRequest, "Invalid verification code")
+			}
+			log.Errorf("Error finding code: %v", err)
+			return echo.NewHTTPError(http.StatusInternalServerError, "There was an error, please try again")
+		}
+
+		if code == nil || code.Code != docForm.VerificationCode {
+			return echo.NewHTTPError(http.StatusBadRequest, "Invalid verification code")
+		}
+	}
+
+	avatar, _ := file.GetFileThenUpload(c, "avatar", config.AWS.AvatarDir)
+	if avatar != "" {
+		user.Avatar = avatar
+	}
+
+	if docForm.Name != "" {
+		user.Name = docForm.Name
+	}
+	if docForm.Email != "" {
+		user.Email = docForm.Email
+	}
+	if docForm.Position != "" {
+		user.Position = docForm.Position
+	}
+	if docForm.Phone != "" {
+		user.Phone = docForm.Phone
+	}
 
 	doc, err := h.userRepo.Update(user)
 	if err != nil {

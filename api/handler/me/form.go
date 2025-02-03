@@ -4,6 +4,7 @@ import (
 	"github.com/asaskevich/govalidator"
 	"github.com/labstack/echo/v4"
 	"net/http"
+	_const "proman-backend/internal/pkg/const"
 	"proman-backend/internal/pkg/log"
 	"strings"
 )
@@ -25,11 +26,11 @@ type errorDoc struct {
 }
 
 type updateMeForm struct {
-	Name     string `form:"name" json:"name"`
-	Email    string `form:"email" json:"email"`
-	Password string `form:"password" json:"password"`
-	Position string `form:"position" json:"position"`
-	Phone    string `form:"phone" json:"phone"`
+	Name             string `form:"name" json:"name"`
+	Phone            string `form:"phone" json:"phone"`
+	Email            string `form:"email" json:"email"`
+	Position         string `form:"position" json:"position"`
+	VerificationCode string `form:"verification_code" json:"verification_code"`
 }
 
 func newUpdateMeForm(c echo.Context) (*updateMeForm, error) {
@@ -47,7 +48,7 @@ func newUpdateMeForm(c echo.Context) (*updateMeForm, error) {
 	var validationErrors []errorDoc
 
 	// Validate name
-	if len(form.Name) < minNameLength || len(form.Name) > maxNameLength {
+	if len(form.Name) != 0 && (len(form.Name) < minNameLength || len(form.Name) > maxNameLength) {
 		validationErrors = append(validationErrors, errorDoc{
 			Field:   "name",
 			Message: "Name must be between 1 and 50 characters",
@@ -55,36 +56,28 @@ func newUpdateMeForm(c echo.Context) (*updateMeForm, error) {
 	}
 
 	// Validate email
-	if len(form.Email) < minEmailLength || len(form.Email) > maxEmailLength {
+	if len(form.Email) != 0 && (len(form.Email) < minEmailLength || len(form.Email) > maxEmailLength) {
 		validationErrors = append(validationErrors, errorDoc{
 			Field:   "email",
 			Message: "Email must be between 3 and 50 characters",
 		})
-	} else if !govalidator.IsEmail(form.Email) {
+	} else if len(form.Email) != 0 && !govalidator.IsEmail(form.Email) {
 		validationErrors = append(validationErrors, errorDoc{
 			Field:   "email",
 			Message: "Invalid email format",
 		})
 	}
 
-	// Validate password
-	if len(form.Password) < minPasswordLength || len(form.Password) > maxPasswordLength {
-		validationErrors = append(validationErrors, errorDoc{
-			Field:   "password",
-			Message: "Password must be between 6 and 50 characters",
-		})
-	}
-
 	// Validate position
-	if form.Position == "" {
+	if len(form.Position) != 0 && !_const.IsValidPosition(form.Position) {
 		validationErrors = append(validationErrors, errorDoc{
 			Field:   "position",
-			Message: "Position cannot be empty",
+			Message: "Invalid position",
 		})
 	}
 
 	// Validate phone
-	if len(form.Phone) < minPhoneLength || len(form.Phone) > maxPhoneLength {
+	if len(form.Phone) != 0 && (len(form.Phone) < minPhoneLength || len(form.Phone) > maxPhoneLength) {
 		validationErrors = append(validationErrors, errorDoc{
 			Field:   "phone",
 			Message: "Phone must be between 2 and 20 characters",

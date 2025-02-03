@@ -30,9 +30,9 @@ func (u *User) MarshalJSON() ([]byte, error) {
 	if u.Avatar != "" {
 		url = "https://" + config.S3.Bucket
 		if !strings.Contains(config.S3.EndPoint, "https://") {
-			url = url + "." + config.S3.EndPoint + "/" + config.AWS.AvatarDir + "/" + u.Avatar
+			url = url + "." + config.S3.EndPoint + "/" + u.Avatar
 		} else {
-			url = url + "." + config.S3.EndPoint[8:] + "/" + config.AWS.AvatarDir + "/" + u.Avatar
+			url = url + "." + config.S3.EndPoint[8:] + "/" + u.Avatar
 		}
 	}
 	return json.Marshal(&struct {
@@ -184,7 +184,7 @@ func (r *UserCollRepository) Update(userData *User) (*User, error) {
 	if err != nil {
 		return nil, err
 	}
-	return data, nil
+	return userData, nil
 }
 
 func (r *UserCollRepository) Check() bool {

@@ -23,19 +23,6 @@ definitions:
       password:
         type: string
     type: object
-  me.updateMeForm:
-    properties:
-      email:
-        type: string
-      name:
-        type: string
-      password:
-        type: string
-      phone:
-        type: string
-      position:
-        type: string
-    type: object
   me.updateMePasswordForm:
     properties:
       confirm_password:
@@ -142,12 +129,30 @@ paths:
       - application/json
       operationId: update-me
       parameters:
-      - description: update me json
-        in: body
-        name: body
-        required: true
-        schema:
-          $ref: '#/definitions/me.updateMeForm'
+      - description: name
+        in: formData
+        name: name
+        type: string
+      - description: email
+        in: formData
+        name: email
+        type: string
+      - description: position
+        in: formData
+        name: position
+        type: string
+      - description: phone
+        in: formData
+        name: phone
+        type: string
+      - description: avatar
+        in: formData
+        name: avatar
+        type: file
+      - description: verification_code
+        in: formData
+        name: verification_code
+        type: string
       produces:
       - application/json
       responses:
