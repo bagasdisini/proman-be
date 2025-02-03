@@ -11,6 +11,7 @@ import (
 	echoswagger "github.com/swaggo/echo-swagger"
 	"net/http"
 	"proman-backend/api/handler/auth"
+	"proman-backend/api/handler/code"
 	"proman-backend/api/handler/me"
 	"proman-backend/api/handler/project"
 	"proman-backend/api/handler/schedule"
@@ -31,6 +32,10 @@ import (
 // @securityDefinitions.apikey ApiKeyAuth
 // @in header
 // @name Authorization
+
+// @securityDefinitions.basic BasicAuth
+// @in header
+
 const appName = "Proman Backend"
 
 func main() {
@@ -101,6 +106,7 @@ func main() {
 	task.NewHandler(e, db)
 	user.NewHandler(e, db)
 	schedule.NewHandler(e, db)
+	code.NewHandler(e, db)
 
 	log.Fatal(e.Start(fmt.Sprintf(`%v:%v`, config.App.Host, config.App.Port)))
 }

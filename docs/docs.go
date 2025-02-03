@@ -136,6 +136,42 @@ const docTemplate = `{
                 }
             }
         },
+        "/api/me/password": {
+            "put": {
+                "security": [
+                    {
+                        "ApiKeyAuth": []
+                    }
+                ],
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Me"
+                ],
+                "summary": "Update my password",
+                "operationId": "update-my-password",
+                "parameters": [
+                    {
+                        "description": "update my password json",
+                        "name": "body",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/me.updateMePasswordForm"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK"
+                    }
+                }
+            }
+        },
         "/api/me/project/count": {
             "get": {
                 "security": [
@@ -841,6 +877,40 @@ const docTemplate = `{
                     }
                 }
             }
+        },
+        "/api/verification-code/{email}": {
+            "post": {
+                "security": [
+                    {
+                        "BasicAuth": []
+                    }
+                ],
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Code"
+                ],
+                "summary": "Create verification code",
+                "operationId": "code-create",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Email User",
+                        "name": "email",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK"
+                    }
+                }
+            }
         }
     },
     "definitions": {
@@ -900,6 +970,23 @@ const docTemplate = `{
                 }
             }
         },
+        "me.updateMePasswordForm": {
+            "type": "object",
+            "properties": {
+                "confirm_password": {
+                    "type": "string"
+                },
+                "new_password": {
+                    "type": "string"
+                },
+                "old_password": {
+                    "type": "string"
+                },
+                "verification_code": {
+                    "type": "string"
+                }
+            }
+        },
         "schedule.scheduleForm": {
             "type": "object",
             "properties": {
@@ -952,6 +1039,9 @@ const docTemplate = `{
             "type": "apiKey",
             "name": "Authorization",
             "in": "header"
+        },
+        "BasicAuth": {
+            "type": "basic"
         }
     }
 }`

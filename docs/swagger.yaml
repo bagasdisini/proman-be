@@ -36,6 +36,17 @@ definitions:
       position:
         type: string
     type: object
+  me.updateMePasswordForm:
+    properties:
+      confirm_password:
+        type: string
+      new_password:
+        type: string
+      old_password:
+        type: string
+      verification_code:
+        type: string
+    type: object
   schedule.scheduleForm:
     properties:
       contributor:
@@ -145,6 +156,28 @@ paths:
       security:
       - ApiKeyAuth: []
       summary: Update my profile
+      tags:
+      - Me
+  /api/me/password:
+    put:
+      consumes:
+      - application/json
+      operationId: update-my-password
+      parameters:
+      - description: update my password json
+        in: body
+        name: body
+        required: true
+        schema:
+          $ref: '#/definitions/me.updateMePasswordForm'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+      security:
+      - ApiKeyAuth: []
+      summary: Update my password
       tags:
       - Me
   /api/me/project/count:
@@ -592,9 +625,32 @@ paths:
       summary: Get user count
       tags:
       - User
+  /api/verification-code/{email}:
+    post:
+      consumes:
+      - application/json
+      operationId: code-create
+      parameters:
+      - description: Email User
+        in: path
+        name: email
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+      security:
+      - BasicAuth: []
+      summary: Create verification code
+      tags:
+      - Code
 securityDefinitions:
   ApiKeyAuth:
     in: header
     name: Authorization
     type: apiKey
+  BasicAuth:
+    type: basic
 swagger: "2.0"

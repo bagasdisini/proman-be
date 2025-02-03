@@ -6,6 +6,7 @@ import (
 	"go.mongodb.org/mongo-driver/v2/mongo"
 	"net/http"
 	"proman-backend/api/repository"
+	"proman-backend/config"
 	"proman-backend/internal/pkg/const"
 	"proman-backend/internal/pkg/context"
 	"proman-backend/internal/pkg/log"
@@ -18,6 +19,7 @@ type Handler struct {
 	projectRepo  *repository.ProjectCollRepository
 	taskRepo     *repository.TaskCollRepository
 	scheduleRepo *repository.ScheduleCollRepository
+	codeRepo     *repository.CodeCollRepository
 }
 
 func NewHandler(e *echo.Echo, db *mongo.Database) *Handler {
@@ -26,12 +28,14 @@ func NewHandler(e *echo.Echo, db *mongo.Database) *Handler {
 		projectRepo:  repository.NewProjectRepository(db),
 		taskRepo:     repository.NewTaskRepository(db),
 		scheduleRepo: repository.NewScheduleRepository(db),
+		codeRepo:     repository.NewCodeCollRepository(db),
 	}
 
 	me := e.Group("/api", context.ContextHandler)
 
 	me.GET("/me", h.me)
 	me.PUT("/me", h.updateMe)
+	me.PUT("/me/password", h.updateMePassword)
 
 	me.GET("/me/projects", h.myProjects)
 	me.GET("/me/project/count", h.myProjectCount)
@@ -101,6 +105,61 @@ func (h *Handler) updateMe(c echo.Context) error {
 	user.Password = util.CryptPassword(updateMeForm.Password)
 	user.Position = updateMeForm.Position
 	user.Phone = updateMeForm.Phone
+
+	doc, err := h.userRepo.Update(user)
+	if err != nil {
+		log.Errorf("Error updating user: %v", err)
+		return echo.NewHTTPError(http.StatusInternalServerError, "There was an error, please try again")
+	}
+	return c.JSON(http.StatusOK, doc)
+}
+
+// Me Password
+// @Tags Me
+// @Summary Update my password
+// @ID update-my-password
+// @Router /api/me/password [put]
+// @Accept json
+// @Param body body updateMePasswordForm true "update my password json"
+// @Produce json
+// @Success 200
+// @Security ApiKeyAuth
+func (h *Handler) updateMePassword(c echo.Context) error {
+	uc := c.(*context.Context)
+	docForm, err := newUpdateMePasswordForm(c)
+	if err != nil {
+		return err
+	}
+
+	user, err := h.userRepo.FindOneByID(uc.Claims.IDAsObjectID)
+	if err != nil {
+		if errors.Is(err, mongo.ErrNoDocuments) {
+			return echo.NewHTTPError(http.StatusNotFound, "User not found")
+		}
+		log.Errorf("Error finding user: %v", err)
+		return echo.NewHTTPError(http.StatusInternalServerError, "There was an error, please try again")
+	}
+
+	if !util.CheckPassword(user.Password, docForm.OldPassword) {
+		return echo.NewHTTPError(http.StatusBadRequest, "Wrong old password")
+	}
+
+	if config.Vcode.CheckEnable {
+		code, err := h.codeRepo.FindActiveOneByUserID(uc.Claims.IDAsObjectID)
+		if err != nil {
+			if errors.Is(err, mongo.ErrNoDocuments) {
+				return echo.NewHTTPError(http.StatusBadRequest, "Invalid verification code")
+			}
+			log.Errorf("Error finding code: %v", err)
+			return echo.NewHTTPError(http.StatusInternalServerError, "There was an error, please try again")
+		}
+
+		if code == nil || code.Code != docForm.VerificationCode {
+			return echo.NewHTTPError(http.StatusBadRequest, "Invalid verification code")
+		}
+	}
+
+	user.Password = util.CryptPassword(docForm.NewPassword)
 
 	doc, err := h.userRepo.Update(user)
 	if err != nil {

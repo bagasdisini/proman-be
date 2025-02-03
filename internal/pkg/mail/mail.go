@@ -7,6 +7,11 @@ import (
 )
 
 func SendMail(cc, receiver []string, subject string, body string) error {
+	if !config.Mail.Enable {
+		log.Info("Mail API is disabled")
+		return nil
+	}
+
 	mailer := gomail.NewMessage()
 	mailer.SetHeader("From", config.Mail.SenderName)
 	mailer.SetHeader("To", receiver...)
@@ -22,5 +27,6 @@ func SendMail(cc, receiver []string, subject string, body string) error {
 		return err
 	}
 
+	log.Infof("Mail sent to %v", receiver)
 	return nil
 }

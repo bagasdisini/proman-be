@@ -12,17 +12,28 @@ var App struct {
 	AllowOrigins string `mapstructure:"CORS_ALLOW_ORIGINS"`
 }
 
+var Basic struct {
+	Username string `mapstructure:"BASIC_AUTH_USERNAME"`
+	Password string `mapstructure:"BASIC_AUTH_PASSWORD"`
+}
+
 var JWT struct {
 	Key    string `mapstructure:"AUTH_JWT_KEY"`
 	Expire int    `mapstructure:"AUTH_JWT_EXPIRE"`
 }
 
 var Mail struct {
+	Enable     bool   `mapstructure:"MAIL_ENABLE"`
 	Host       string `mapstructure:"MAIL_HOST"`
 	Port       int    `mapstructure:"MAIL_PORT"`
 	SenderName string `mapstructure:"MAIL_SENDER_NAME"`
 	AuthMail   string `mapstructure:"MAIL_AUTH_EMAIL"`
 	AuthPass   string `mapstructure:"MAIL_AUTH_PASSWORD"`
+}
+
+var Vcode struct {
+	CheckEnable bool `mapstructure:"VCODE_CHECK_ENABLE"`
+	Length      int  `mapstructure:"VCODE_LENGTH"`
 }
 
 func initApp() {
@@ -44,6 +55,16 @@ func initApp() {
 		panic("CORS_ALLOW_ORIGINS is not set")
 	}
 
+	Basic.Username = os.Getenv("BASIC_AUTH_USERNAME")
+	Basic.Password = os.Getenv("BASIC_AUTH_PASSWORD")
+
+	if Basic.Username == "" {
+		panic("BASIC_AUTH_USERNAME is not set")
+	}
+	if Basic.Password == "" {
+		panic("BASIC_AUTH_PASSWORD is not set")
+	}
+
 	JWT.Key = os.Getenv("AUTH_JWT_KEY")
 	expire, err := strconv.Atoi(os.Getenv("AUTH_JWT_EXPIRE"))
 	if err != nil {
@@ -60,6 +81,11 @@ func initApp() {
 		panic("AUTH_JWT_EXPIRE must be greater than 0")
 	}
 
+	mailEnable, err := strconv.ParseBool(os.Getenv("MAIL_ENABLE"))
+	if err != nil {
+		panic("MAIL_ENABLE is not valid")
+	}
+	Mail.Enable = mailEnable
 	Mail.Host = os.Getenv("MAIL_HOST")
 	portInt, err := strconv.Atoi(os.Getenv("MAIL_PORT"))
 	if err != nil {
@@ -85,4 +111,18 @@ func initApp() {
 	if Mail.AuthPass == "" {
 		panic("MAIL_AUTH_PASSWORD is not set")
 	}
+
+	vcodeCheckEnable, err := strconv.ParseBool(os.Getenv("VCODE_CHECK_ENABLE"))
+	if err != nil {
+		panic("VCODE_CHECK_ENABLE is not valid")
+	}
+	Vcode.CheckEnable = vcodeCheckEnable
+	vcodeLength, err := strconv.Atoi(os.Getenv("VCODE_LENGTH"))
+	if err != nil {
+		panic("VCODE_LENGTH is not valid")
+	}
+	if vcodeLength < 1 {
+		panic("VCODE_LENGTH is not valid")
+	}
+	Vcode.Length = vcodeLength
 }

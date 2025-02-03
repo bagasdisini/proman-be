@@ -90,5 +90,64 @@ func newUpdateMeForm(c echo.Context) (*updateMeForm, error) {
 			Message: "Phone must be between 2 and 20 characters",
 		})
 	}
+
+	if len(validationErrors) > 0 {
+		return nil, echo.NewHTTPError(http.StatusBadRequest, map[string]interface{}{
+			"errors": validationErrors,
+		})
+	}
+	return form, nil
+}
+
+type updateMePasswordForm struct {
+	OldPassword      string `form:"old_password" json:"old_password"`
+	NewPassword      string `form:"new_password" json:"new_password"`
+	ConfirmPassword  string `form:"confirm_password" json:"confirm_password"`
+	VerificationCode string `form:"verification_code" json:"verification_code"`
+}
+
+func newUpdateMePasswordForm(c echo.Context) (*updateMePasswordForm, error) {
+	form := new(updateMePasswordForm)
+	if err := c.Bind(form); err != nil {
+		log.Errorf("Error binding form: %v", err)
+		return nil, echo.NewHTTPError(http.StatusBadRequest, "Invalid request payload")
+	}
+
+	form.OldPassword = strings.TrimSpace(form.OldPassword)
+	form.NewPassword = strings.TrimSpace(form.NewPassword)
+	form.ConfirmPassword = strings.TrimSpace(form.ConfirmPassword)
+	form.VerificationCode = strings.TrimSpace(form.VerificationCode)
+
+	var validationErrors []errorDoc
+
+	// Validate old password
+	if len(form.OldPassword) < minPasswordLength || len(form.OldPassword) > maxPasswordLength {
+		validationErrors = append(validationErrors, errorDoc{
+			Field:   "old_password",
+			Message: "Old password must be between 6 and 50 characters",
+		})
+	}
+
+	// Validate new password
+	if len(form.NewPassword) < minPasswordLength || len(form.NewPassword) > maxPasswordLength {
+		validationErrors = append(validationErrors, errorDoc{
+			Field:   "new_password",
+			Message: "New password must be between 6 and 50 characters",
+		})
+	}
+
+	// Validate confirm password
+	if form.NewPassword != form.ConfirmPassword {
+		validationErrors = append(validationErrors, errorDoc{
+			Field:   "confirm_password",
+			Message: "Confirm password does not match",
+		})
+	}
+
+	if len(validationErrors) > 0 {
+		return nil, echo.NewHTTPError(http.StatusBadRequest, map[string]interface{}{
+			"errors": validationErrors,
+		})
+	}
 	return form, nil
 }
