@@ -17,6 +17,11 @@ const (
 	maxTypeLength        = 50
 )
 
+type errorDoc struct {
+	Field   string `json:"field"`
+	Message string `json:"message"`
+}
+
 type scheduleForm struct {
 	Name        string `json:"name" form:"name"`
 	Description string `json:"description" form:"description"`
@@ -24,11 +29,6 @@ type scheduleForm struct {
 	EndDate     int64  `json:"end_date" form:"end_date"`
 	Contributor string `json:"contributor" form:"contributor"`
 	Type        string `json:"type" form:"type"`
-}
-
-type errorDoc struct {
-	Field   string `json:"field"`
-	Message string `json:"message"`
 }
 
 func newScheduleForm(c echo.Context) (*scheduleForm, error) {
@@ -44,7 +44,7 @@ func newScheduleForm(c echo.Context) (*scheduleForm, error) {
 	form.Contributor = strings.TrimSpace(form.Contributor)
 	form.Type = strings.TrimSpace(form.Type)
 
-	var validationErrors []errorDoc
+	validationErrors := make([]errorDoc, 0)
 
 	// Validate name
 	if len(form.Name) < minNameLength || len(form.Name) > maxNameLength {

@@ -53,7 +53,7 @@ type TaskCollRepository struct {
 	coll *mongo.Collection
 }
 
-func NewTaskRepository(db *mongo.Database) *TaskCollRepository {
+func NewTaskCollRepository(db *mongo.Database) *TaskCollRepository {
 	return &TaskCollRepository{
 		coll: db.Collection("tasks"),
 	}

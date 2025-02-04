@@ -25,18 +25,18 @@ type Handler struct {
 
 func NewHandler(e *echo.Echo, db *mongo.Database) *Handler {
 	h := &Handler{
-		userRepo:     repository.NewUserRepository(db),
-		projectRepo:  repository.NewProjectRepository(db),
-		taskRepo:     repository.NewTaskRepository(db),
-		scheduleRepo: repository.NewScheduleRepository(db),
+		userRepo:     repository.NewUserCollRepository(db),
+		projectRepo:  repository.NewProjectCollRepository(db),
+		taskRepo:     repository.NewTaskCollRepository(db),
+		scheduleRepo: repository.NewScheduleCollRepository(db),
 		codeRepo:     repository.NewCodeCollRepository(db),
 	}
 
 	me := e.Group("/api", context.ContextHandler)
 
-	me.GET("/me", h.me)
-	me.PUT("/me", h.updateMe)
-	me.PUT("/me/password", h.updateMePassword)
+	me.GET("/me", h.myProfile)
+	me.PUT("/me", h.updateMyProfile)
+	me.PUT("/me/password", h.updateMyPassword)
 
 	me.GET("/me/projects", h.myProjects)
 	me.GET("/me/project/count", h.myProjectCount)
@@ -52,16 +52,16 @@ func NewHandler(e *echo.Echo, db *mongo.Database) *Handler {
 	return h
 }
 
-// Me
+// My Profile
 // @Tags Me
 // @Summary Get my info
-// @ID me
+// @ID my-profile
 // @Router /api/me [get]
 // @Accept json
 // @Produce json
 // @Success 200
 // @Security ApiKeyAuth
-func (h *Handler) me(c echo.Context) error {
+func (h *Handler) myProfile(c echo.Context) error {
 	uc := c.(*context.Context)
 
 	user, err := h.userRepo.FindOneByID(uc.Claims.IDAsObjectID)
@@ -75,10 +75,10 @@ func (h *Handler) me(c echo.Context) error {
 	return c.JSON(http.StatusOK, user)
 }
 
-// Me
+// Update My Profile
 // @Tags Me
 // @Summary Update my profile
-// @ID update-me
+// @ID update-my-profile
 // @Router /api/me [put]
 // @Accept json
 // @Param name formData string false "name"
@@ -90,9 +90,9 @@ func (h *Handler) me(c echo.Context) error {
 // @Produce json
 // @Success 200
 // @Security ApiKeyAuth
-func (h *Handler) updateMe(c echo.Context) error {
+func (h *Handler) updateMyProfile(c echo.Context) error {
 	uc := c.(*context.Context)
-	docForm, err := newUpdateMeForm(c)
+	docForm, err := newUpdateMyProfileForm(c)
 	if err != nil {
 		return err
 	}
@@ -147,19 +147,19 @@ func (h *Handler) updateMe(c echo.Context) error {
 	return c.JSON(http.StatusOK, doc)
 }
 
-// Me Password
+// Update My Password
 // @Tags Me
 // @Summary Update my password
 // @ID update-my-password
 // @Router /api/me/password [put]
 // @Accept json
-// @Param body body updateMePasswordForm true "update my password json"
+// @Param body body updateMyPasswordForm true "update my password json"
 // @Produce json
 // @Success 200
 // @Security ApiKeyAuth
-func (h *Handler) updateMePassword(c echo.Context) error {
+func (h *Handler) updateMyPassword(c echo.Context) error {
 	uc := c.(*context.Context)
-	docForm, err := newUpdateMePasswordForm(c)
+	docForm, err := newUpdateMyPasswordForm(c)
 	if err != nil {
 		return err
 	}

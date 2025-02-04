@@ -79,7 +79,7 @@ type ProjectCollRepository struct {
 	coll *mongo.Collection
 }
 
-func NewProjectRepository(db *mongo.Database) *ProjectCollRepository {
+func NewProjectCollRepository(db *mongo.Database) *ProjectCollRepository {
 	return &ProjectCollRepository{
 		coll: db.Collection("projects"),
 	}

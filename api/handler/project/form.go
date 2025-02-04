@@ -17,6 +17,11 @@ const (
 	maxTypeLength        = 50
 )
 
+type errorDoc struct {
+	Field   string `json:"field"`
+	Message string `json:"message"`
+}
+
 type projectForm struct {
 	Name        string `json:"name" form:"name"`
 	Description string `json:"description" form:"description"`
@@ -24,13 +29,6 @@ type projectForm struct {
 	EndDate     int64  `json:"end_date" form:"end_date"`
 	Contributor string `json:"contributor" form:"contributor"`
 	Type        string `json:"type" form:"type"`
-	Logo        string `json:"logo" bson:"logo"`
-	Attachments string `json:"attachments" bson:"attachments"`
-}
-
-type errorDoc struct {
-	Field   string `json:"field"`
-	Message string `json:"message"`
 }
 
 func newProjectForm(c echo.Context) (*projectForm, error) {
@@ -40,13 +38,12 @@ func newProjectForm(c echo.Context) (*projectForm, error) {
 		return nil, echo.NewHTTPError(http.StatusBadRequest, "Invalid data format.")
 	}
 
-	// Sanitize inputs
 	form.Name = strings.TrimSpace(form.Name)
 	form.Description = strings.TrimSpace(form.Description)
 	form.Contributor = strings.TrimSpace(form.Contributor)
 	form.Type = strings.TrimSpace(form.Type)
 
-	var validationErrors []errorDoc
+	validationErrors := make([]errorDoc, 0)
 
 	// Validate name
 	if len(form.Name) < minNameLength || len(form.Name) > maxNameLength {

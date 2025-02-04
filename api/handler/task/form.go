@@ -16,6 +16,11 @@ const (
 	maxDescriptionLength = 1000
 )
 
+type errorDoc struct {
+	Field   string `json:"field"`
+	Message string `json:"message"`
+}
+
 type taskForm struct {
 	Name        string `json:"name" form:"name"`
 	Description string `json:"description" form:"description"`
@@ -23,11 +28,6 @@ type taskForm struct {
 	EndDate     int64  `json:"end_date" form:"end_date"`
 	Contributor string `json:"contributor" form:"contributor"`
 	ProjectID   string `json:"project_id" form:"project_id"`
-}
-
-type errorDoc struct {
-	Field   string `json:"field"`
-	Message string `json:"message"`
 }
 
 func newTaskForm(c echo.Context) (*taskForm, error) {
@@ -43,7 +43,7 @@ func newTaskForm(c echo.Context) (*taskForm, error) {
 	form.Contributor = strings.TrimSpace(form.Contributor)
 	form.ProjectID = strings.TrimSpace(form.ProjectID)
 
-	var validationErrors []errorDoc
+	validationErrors := make([]errorDoc, 0)
 
 	// Validate name
 	if len(form.Name) < minNameLength || len(form.Name) > maxNameLength {

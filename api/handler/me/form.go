@@ -25,7 +25,7 @@ type errorDoc struct {
 	Message string `json:"message"`
 }
 
-type updateMeForm struct {
+type updateMyProfileForm struct {
 	Name             string `form:"name" json:"name"`
 	Phone            string `form:"phone" json:"phone"`
 	Email            string `form:"email" json:"email"`
@@ -33,19 +33,20 @@ type updateMeForm struct {
 	VerificationCode string `form:"verification_code" json:"verification_code"`
 }
 
-func newUpdateMeForm(c echo.Context) (*updateMeForm, error) {
-	form := new(updateMeForm)
+func newUpdateMyProfileForm(c echo.Context) (*updateMyProfileForm, error) {
+	form := new(updateMyProfileForm)
 	if err := c.Bind(form); err != nil {
 		log.Errorf("Error binding form: %v", err)
 		return nil, echo.NewHTTPError(http.StatusBadRequest, "Invalid request payload")
 	}
 
 	form.Name = strings.TrimSpace(form.Name)
+	form.Phone = strings.TrimSpace(form.Phone)
 	form.Email = strings.ToLower(strings.TrimSpace(form.Email))
 	form.Position = strings.TrimSpace(form.Position)
-	form.Phone = strings.TrimSpace(form.Phone)
+	form.VerificationCode = strings.TrimSpace(form.VerificationCode)
 
-	var validationErrors []errorDoc
+	validationErrors := make([]errorDoc, 0)
 
 	// Validate name
 	if len(form.Name) != 0 && (len(form.Name) < minNameLength || len(form.Name) > maxNameLength) {
@@ -92,26 +93,23 @@ func newUpdateMeForm(c echo.Context) (*updateMeForm, error) {
 	return form, nil
 }
 
-type updateMePasswordForm struct {
+type updateMyPasswordForm struct {
 	OldPassword      string `form:"old_password" json:"old_password"`
 	NewPassword      string `form:"new_password" json:"new_password"`
 	ConfirmPassword  string `form:"confirm_password" json:"confirm_password"`
 	VerificationCode string `form:"verification_code" json:"verification_code"`
 }
 
-func newUpdateMePasswordForm(c echo.Context) (*updateMePasswordForm, error) {
-	form := new(updateMePasswordForm)
+func newUpdateMyPasswordForm(c echo.Context) (*updateMyPasswordForm, error) {
+	form := new(updateMyPasswordForm)
 	if err := c.Bind(form); err != nil {
 		log.Errorf("Error binding form: %v", err)
 		return nil, echo.NewHTTPError(http.StatusBadRequest, "Invalid request payload")
 	}
 
-	form.OldPassword = strings.TrimSpace(form.OldPassword)
-	form.NewPassword = strings.TrimSpace(form.NewPassword)
-	form.ConfirmPassword = strings.TrimSpace(form.ConfirmPassword)
 	form.VerificationCode = strings.TrimSpace(form.VerificationCode)
 
-	var validationErrors []errorDoc
+	validationErrors := make([]errorDoc, 0)
 
 	// Validate old password
 	if len(form.OldPassword) < minPasswordLength || len(form.OldPassword) > maxPasswordLength {

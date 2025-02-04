@@ -19,7 +19,7 @@ type Handler struct {
 
 func NewHandler(e *echo.Echo, db *mongo.Database) *Handler {
 	h := &Handler{
-		taskRepo: repository.NewTaskRepository(db),
+		taskRepo: repository.NewTaskCollRepository(db),
 	}
 
 	task := e.Group("/api", context.ContextHandler)

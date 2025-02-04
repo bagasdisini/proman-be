@@ -22,16 +22,16 @@ type Handler struct {
 
 func NewHandler(e *echo.Echo, db *mongo.Database) *Handler {
 	h := &Handler{
-		userRepo: repository.NewUserRepository(db),
+		userRepo: repository.NewUserCollRepository(db),
 		codeRepo: repository.NewCodeCollRepository(db),
 	}
 
-	group := e.Group("/api", middleware.BasicAuth(
+	code := e.Group("/api", middleware.BasicAuth(
 		func(username, password string, c echo.Context) (bool, error) {
 			return username == config.Basic.Username && password == config.Basic.Password, nil
 		}))
 
-	group.POST("/verification-code/:email", h.vcode)
+	code.POST("/verification-code/:email", h.vcode)
 
 	return h
 }

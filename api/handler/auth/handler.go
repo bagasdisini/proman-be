@@ -21,7 +21,7 @@ type Handler struct {
 
 func NewHandler(e *echo.Echo, db *mongo.Database) *Handler {
 	h := &Handler{
-		userRepo: repository.NewUserRepository(db),
+		userRepo: repository.NewUserCollRepository(db),
 	}
 
 	e.POST("/api/login", h.login)
@@ -42,12 +42,12 @@ func NewHandler(e *echo.Echo, db *mongo.Database) *Handler {
 // @Produce json
 // @Success 200
 func (h *Handler) login(c echo.Context) error {
-	loginForm, err := newLoginForm(c)
+	docForm, err := newLoginForm(c)
 	if err != nil {
 		return err
 	}
 
-	u, err := h.userRepo.FindOneByEmail(loginForm.Email)
+	u, err := h.userRepo.FindOneByEmail(docForm.Email)
 	if err != nil {
 		if errors.Is(err, mongo.ErrNoDocuments) {
 			return echo.NewHTTPError(http.StatusBadRequest, "Wrong username/email or password")
@@ -56,7 +56,7 @@ func (h *Handler) login(c echo.Context) error {
 		return echo.NewHTTPError(http.StatusInternalServerError, "There was an error, please try again")
 	}
 
-	if !util.CheckPassword(u.Password, loginForm.Password) {
+	if !util.CheckPassword(u.Password, docForm.Password) {
 		return echo.NewHTTPError(http.StatusBadRequest, "Wrong username/email or password")
 	}
 
@@ -78,21 +78,21 @@ func (h *Handler) login(c echo.Context) error {
 // @Produce json
 // @Success 200
 func (h *Handler) register(c echo.Context) error {
-	registerForm, err := newRegisterForm(c)
+	docForm, err := newRegisterForm(c)
 	if err != nil {
 		return err
 	}
 
-	u, _ := h.userRepo.FindOneByEmail(registerForm.Email)
+	u, _ := h.userRepo.FindOneByEmail(docForm.Email)
 	if u != nil {
 		return echo.NewHTTPError(http.StatusBadRequest, "Email already registered")
 	}
 
 	user := &repository.User{
 		ID:           bson.NewObjectID(),
-		Email:        registerForm.Email,
-		Password:     util.CryptPassword(registerForm.Password),
-		Name:         registerForm.Name,
+		Email:        docForm.Email,
+		Password:     util.CryptPassword(docForm.Password),
+		Name:         docForm.Name,
 		Position:     _const.PositionOther,
 		Avatar:       "",
 		Phone:        "",
@@ -120,12 +120,12 @@ func (h *Handler) register(c echo.Context) error {
 // @Produce json
 // @Success 200
 func (h *Handler) forgotPassword(c echo.Context) error {
-	passwordForm, err := newForgotPasswordForm(c)
+	docForm, err := newForgotPasswordForm(c)
 	if err != nil {
 		return err
 	}
 
-	u, err := h.userRepo.FindOneByEmail(passwordForm.Email)
+	u, err := h.userRepo.FindOneByEmail(docForm.Email)
 	if err != nil {
 		if errors.Is(err, mongo.ErrNoDocuments) {
 			return echo.NewHTTPError(http.StatusNotFound, "Email not found")

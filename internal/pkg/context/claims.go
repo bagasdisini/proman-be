@@ -52,7 +52,7 @@ type Context struct {
 func (c *Context) LoggedInUser() *repository.User {
 	if c.loggedInUser == nil {
 		onceUserRepo.Do(func() {
-			userRepo = repository.NewUserRepository(database.ConnectMongo())
+			userRepo = repository.NewUserCollRepository(database.ConnectMongo())
 		})
 		u, err := userRepo.FindOneByID(c.Claims.IDAsObjectID)
 		if err != nil {

@@ -25,7 +25,7 @@ type ScheduleCollRepository struct {
 	coll *mongo.Collection
 }
 
-func NewScheduleRepository(db *mongo.Database) *ScheduleCollRepository {
+func NewScheduleCollRepository(db *mongo.Database) *ScheduleCollRepository {
 	return &ScheduleCollRepository{
 		coll: db.Collection("schedules"),
 	}

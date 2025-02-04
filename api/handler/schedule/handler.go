@@ -20,7 +20,7 @@ type Handler struct {
 
 func NewHandler(e *echo.Echo, db *mongo.Database) *Handler {
 	h := &Handler{
-		scheduleRepo: repository.NewScheduleRepository(db),
+		scheduleRepo: repository.NewScheduleCollRepository(db),
 	}
 
 	schedule := e.Group("/api", context.ContextHandler)

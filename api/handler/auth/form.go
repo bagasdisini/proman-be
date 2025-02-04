@@ -36,7 +36,7 @@ func newLoginForm(c echo.Context) (*loginForm, error) {
 
 	form.Email = strings.ToLower(strings.TrimSpace(form.Email))
 
-	var validationErrors []errorDoc
+	validationErrors := make([]errorDoc, 0)
 
 	// Validate email
 	if len(form.Email) < minEmailLength || len(form.Email) > maxEmailLength {
@@ -84,7 +84,7 @@ func newRegisterForm(c echo.Context) (*registerForm, error) {
 	form.Name = strings.TrimSpace(form.Name)
 	form.Email = strings.ToLower(strings.TrimSpace(form.Email))
 
-	var validationErrors []errorDoc
+	validationErrors := make([]errorDoc, 0)
 
 	// Validate name
 	if len(form.Name) < minNameLength || len(form.Name) > maxNameLength {
@@ -144,7 +144,7 @@ func newForgotPasswordForm(c echo.Context) (*forgotPasswordForm, error) {
 
 	form.Email = strings.ToLower(strings.TrimSpace(form.Email))
 
-	var validationErrors []errorDoc
+	validationErrors := make([]errorDoc, 0)
 
 	// Validate email
 	if len(form.Email) < minEmailLength || len(form.Email) > maxEmailLength {

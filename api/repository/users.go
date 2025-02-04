@@ -48,7 +48,7 @@ type UserCollRepository struct {
 	coll *mongo.Collection
 }
 
-func NewUserRepository(db *mongo.Database) *UserCollRepository {
+func NewUserCollRepository(db *mongo.Database) *UserCollRepository {
 	return &UserCollRepository{
 		coll: db.Collection("users"),
 	}
