@@ -2,6 +2,7 @@ package schedule
 
 import (
 	"errors"
+	"fmt"
 	"github.com/labstack/echo/v4"
 	"go.mongodb.org/mongo-driver/v2/bson"
 	"go.mongodb.org/mongo-driver/v2/mongo"
@@ -15,11 +16,13 @@ import (
 )
 
 type Handler struct {
+	userRepo     *repository.UserCollRepository
 	scheduleRepo *repository.ScheduleCollRepository
 }
 
 func NewHandler(e *echo.Echo, db *mongo.Database) *Handler {
 	h := &Handler{
+		userRepo:     repository.NewUserCollRepository(db),
 		scheduleRepo: repository.NewScheduleCollRepository(db),
 	}
 
@@ -56,7 +59,36 @@ func (h *Handler) list(c echo.Context) error {
 		log.Errorf("Error finding schedule: %v", err)
 		return echo.NewHTTPError(http.StatusInternalServerError, "There was an error, please try again")
 	}
-	return c.JSON(http.StatusOK, schedules)
+
+	response := make([]map[string]interface{}, 0)
+	contributors := map[bson.ObjectID]string{}
+
+	for _, schedule := range schedules {
+		contributorInList := make([]string, 0)
+
+		for _, contributor := range schedule.Contributor {
+			if name, exists := contributors[contributor]; exists {
+				contributorInList = append(contributorInList, name)
+			} else if user, err := h.userRepo.FindOneByID(contributor); err == nil {
+				contributors[contributor] = user.Name
+				contributorInList = append(contributorInList, user.Name)
+			}
+		}
+
+		response = append(response, map[string]interface{}{
+			"id":          schedule.ID,
+			"name":        schedule.Name,
+			"description": schedule.Description,
+			"start_date":  schedule.StartDate,
+			"end_date":    schedule.EndDate,
+			"start_time":  schedule.StartTime,
+			"end_time":    schedule.EndTime,
+			"contributor": contributorInList,
+			"type":        schedule.Type,
+			"created_at":  schedule.CreatedAt,
+		})
+	}
+	return c.JSON(http.StatusOK, response)
 }
 
 // Create Schedule
@@ -79,7 +111,7 @@ func (h *Handler) create(c echo.Context) error {
 	for _, user := range strings.Split(form.Contributor, ",") {
 		userOId, err := bson.ObjectIDFromHex(user)
 		if err != nil {
-			return echo.NewHTTPError(http.StatusBadRequest, "Invalid contributor.")
+			return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("Invalid contributor ID: %s", user))
 		}
 		contributorsOId = append(contributorsOId, userOId)
 	}
@@ -90,6 +122,8 @@ func (h *Handler) create(c echo.Context) error {
 		Description: form.Description,
 		StartDate:   time.UnixMilli(form.StartDate),
 		EndDate:     time.UnixMilli(form.EndDate),
+		StartTime:   form.StartTime,
+		EndTime:     form.EndTime,
 		Contributor: contributorsOId,
 		Type:        form.Type,
 		CreatedAt:   time.Now(),

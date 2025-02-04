@@ -94,7 +94,7 @@ const docTemplate = `{
                     "Me"
                 ],
                 "summary": "Get my info",
-                "operationId": "me",
+                "operationId": "my-profile",
                 "responses": {
                     "200": {
                         "description": "OK"
@@ -117,7 +117,7 @@ const docTemplate = `{
                     "Me"
                 ],
                 "summary": "Update my profile",
-                "operationId": "update-me",
+                "operationId": "update-my-profile",
                 "parameters": [
                     {
                         "type": "string",
@@ -188,7 +188,7 @@ const docTemplate = `{
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "$ref": "#/definitions/me.updateMePasswordForm"
+                            "$ref": "#/definitions/me.updateMyPasswordForm"
                         }
                     }
                 ],
@@ -977,7 +977,7 @@ const docTemplate = `{
                 }
             }
         },
-        "me.updateMePasswordForm": {
+        "me.updateMyPasswordForm": {
             "type": "object",
             "properties": {
                 "confirm_password": {
@@ -1006,11 +1006,17 @@ const docTemplate = `{
                 "end_date": {
                     "type": "integer"
                 },
+                "end_time": {
+                    "type": "string"
+                },
                 "name": {
                     "type": "string"
                 },
                 "start_date": {
                     "type": "integer"
+                },
+                "start_time": {
+                    "type": "string"
                 },
                 "type": {
                     "type": "string"

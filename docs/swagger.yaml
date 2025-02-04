@@ -23,7 +23,7 @@ definitions:
       password:
         type: string
     type: object
-  me.updateMePasswordForm:
+  me.updateMyPasswordForm:
     properties:
       confirm_password:
         type: string
@@ -42,10 +42,14 @@ definitions:
         type: string
       end_date:
         type: integer
+      end_time:
+        type: string
       name:
         type: string
       start_date:
         type: integer
+      start_time:
+        type: string
       type:
         type: string
     type: object
@@ -113,7 +117,7 @@ paths:
     get:
       consumes:
       - application/json
-      operationId: me
+      operationId: my-profile
       produces:
       - application/json
       responses:
@@ -127,7 +131,7 @@ paths:
     put:
       consumes:
       - application/json
-      operationId: update-me
+      operationId: update-my-profile
       parameters:
       - description: name
         in: formData
@@ -174,7 +178,7 @@ paths:
         name: body
         required: true
         schema:
-          $ref: '#/definitions/me.updateMePasswordForm'
+          $ref: '#/definitions/me.updateMyPasswordForm'
       produces:
       - application/json
       responses:

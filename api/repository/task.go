@@ -60,7 +60,7 @@ func NewTaskCollRepository(db *mongo.Database) *TaskCollRepository {
 }
 
 func (r *TaskCollRepository) FindAll(cq *util.CommonQuery) ([]Task, error) {
-	var tasks []Task
+	tasks := []Task{}
 	filter := bson.M{"is_deleted": bson.M{"$ne": true}}
 
 	if len(cq.Q) > 0 {
@@ -117,7 +117,7 @@ func (r *TaskCollRepository) FindAll(cq *util.CommonQuery) ([]Task, error) {
 }
 
 func (r *TaskCollRepository) FindOneByID(_id bson.ObjectID) (*Task, error) {
-	var user *Task
+	user := Task{}
 	filter := bson.M{
 		"_id":        _id,
 		"is_deleted": bson.M{"$ne": true},
@@ -127,7 +127,7 @@ func (r *TaskCollRepository) FindOneByID(_id bson.ObjectID) (*Task, error) {
 	if err != nil {
 		return nil, err
 	}
-	return user, nil
+	return &user, nil
 }
 
 func (r *TaskCollRepository) CreateOne(task *Task) error {
@@ -138,8 +138,8 @@ func (r *TaskCollRepository) CreateOne(task *Task) error {
 	return nil
 }
 
-func (r *TaskCollRepository) CountTask(cq *util.CommonQuery) (*[]CountTaskDetail, error) {
-	var count []CountTaskDetail
+func (r *TaskCollRepository) CountTask(cq *util.CommonQuery) ([]CountTaskDetail, error) {
+	count := []CountTaskDetail{}
 
 	matchStage := bson.D{{"is_deleted", bson.M{"$ne": true}}}
 
@@ -194,7 +194,7 @@ func (r *TaskCollRepository) CountTask(cq *util.CommonQuery) (*[]CountTaskDetail
 	if err = cursor.All(context.TODO(), &count); err != nil {
 		return nil, err
 	}
-	return &count, nil
+	return count, nil
 }
 
 func (r *TaskCollRepository) CountUserTask(userRepo *UserCollRepository) (*CountUserActive, error) {
@@ -214,11 +214,11 @@ func (r *TaskCollRepository) CountUserTask(userRepo *UserCollRepository) (*Count
 		return nil, err
 	}
 
-	var contributorsWithTasks []bson.ObjectID
+	contributorsWithTasks := []bson.ObjectID{}
 	for cursor.Next(context.TODO()) {
-		var result struct {
+		result := struct {
 			ID []bson.ObjectID `bson:"_id"`
-		}
+		}{}
 		if err := cursor.Decode(&result); err != nil {
 			return nil, err
 		}

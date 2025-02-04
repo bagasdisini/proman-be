@@ -3,6 +3,7 @@ package schedule
 import (
 	"github.com/labstack/echo/v4"
 	"net/http"
+	_const "proman-backend/internal/pkg/const"
 	"proman-backend/internal/pkg/log"
 	"strings"
 	"time"
@@ -13,8 +14,6 @@ const (
 	maxNameLength        = 100
 	minDescriptionLength = 10
 	maxDescriptionLength = 1000
-	minTypeLength        = 1
-	maxTypeLength        = 50
 )
 
 type errorDoc struct {
@@ -27,6 +26,8 @@ type scheduleForm struct {
 	Description string `json:"description" form:"description"`
 	StartDate   int64  `json:"start_date" form:"start_date"`
 	EndDate     int64  `json:"end_date" form:"end_date"`
+	StartTime   string `json:"start_time" form:"start_time"`
+	EndTime     string `json:"end_time" form:"end_time"`
 	Contributor string `json:"contributor" form:"contributor"`
 	Type        string `json:"type" form:"type"`
 }
@@ -43,6 +44,8 @@ func newScheduleForm(c echo.Context) (*scheduleForm, error) {
 	form.Description = strings.TrimSpace(form.Description)
 	form.Contributor = strings.TrimSpace(form.Contributor)
 	form.Type = strings.TrimSpace(form.Type)
+	form.StartTime = strings.TrimSpace(form.StartTime)
+	form.EndTime = strings.TrimSpace(form.EndTime)
 
 	validationErrors := make([]errorDoc, 0)
 
@@ -71,10 +74,10 @@ func newScheduleForm(c echo.Context) (*scheduleForm, error) {
 	}
 
 	// Validate type
-	if len(form.Type) < minTypeLength || len(form.Type) > maxTypeLength {
+	if !_const.IsValidScheduleType(form.Type) {
 		validationErrors = append(validationErrors, errorDoc{
 			Field:   "type",
-			Message: "Type must be between 1 and 50 characters.",
+			Message: "Invalid schedule type.",
 		})
 	}
 
@@ -84,14 +87,6 @@ func newScheduleForm(c echo.Context) (*scheduleForm, error) {
 			Field:   "start_date",
 			Message: "Invalid start date.",
 		})
-	} else {
-		startDate := time.Unix(form.StartDate, 0)
-		if startDate.After(time.Now()) {
-			validationErrors = append(validationErrors, errorDoc{
-				Field:   "start_date",
-				Message: "Start date cannot be in the future.",
-			})
-		}
 	}
 
 	// Validate end date
@@ -104,6 +99,37 @@ func newScheduleForm(c echo.Context) (*scheduleForm, error) {
 		validationErrors = append(validationErrors, errorDoc{
 			Field:   "end_date",
 			Message: "End date must be after the start date.",
+		})
+	}
+
+	// Validate start time
+	if form.StartTime == "" {
+		validationErrors = append(validationErrors, errorDoc{
+			Field:   "start_time",
+			Message: "Start time cannot be empty.",
+		})
+	} else if _, err := time.Parse("15:04", form.StartTime); err != nil {
+		validationErrors = append(validationErrors, errorDoc{
+			Field:   "start_time",
+			Message: "Invalid start time format.",
+		})
+	}
+
+	// Validate end time
+	if form.EndTime == "" {
+		validationErrors = append(validationErrors, errorDoc{
+			Field:   "end_time",
+			Message: "End time cannot be empty.",
+		})
+	} else if _, err := time.Parse("15:04", form.EndTime); err != nil {
+		validationErrors = append(validationErrors, errorDoc{
+			Field:   "end_time",
+			Message: "Invalid end time format.",
+		})
+	} else if form.EndTime <= form.StartTime {
+		validationErrors = append(validationErrors, errorDoc{
+			Field:   "end_time",
+			Message: "End time must be after the start time.",
 		})
 	}
 

@@ -30,7 +30,7 @@ type Project struct {
 
 func (u *Project) MarshalJSON() ([]byte, error) {
 	type Alias Project
-	var url string
+	url := ""
 	if u.Logo != "" {
 		url = "https://" + config.S3.Bucket
 		if !strings.Contains(config.S3.EndPoint, "https://") {
@@ -39,7 +39,7 @@ func (u *Project) MarshalJSON() ([]byte, error) {
 			url = url + "." + config.S3.EndPoint[8:] + "/" + u.Logo
 		}
 	}
-	var attachments []string
+	attachments := []string{}
 	if u.Attachments != nil {
 		for _, attachment := range u.Attachments {
 			urls := "https://" + config.S3.Bucket
@@ -85,8 +85,8 @@ func NewProjectCollRepository(db *mongo.Database) *ProjectCollRepository {
 	}
 }
 
-func (r *ProjectCollRepository) FindAll(cq *util.CommonQuery) (*[]Project, error) {
-	var projects []Project
+func (r *ProjectCollRepository) FindAll(cq *util.CommonQuery) ([]Project, error) {
+	projects := []Project{}
 
 	matchStage := bson.M{"is_deleted": bson.M{"$ne": true}}
 
@@ -211,11 +211,11 @@ func (r *ProjectCollRepository) FindAll(cq *util.CommonQuery) (*[]Project, error
 	if err = cursor.All(context.TODO(), &projects); err != nil {
 		return nil, err
 	}
-	return &projects, nil
+	return projects, nil
 }
 
 func (r *ProjectCollRepository) FindOneByID(_id bson.ObjectID) (*Project, error) {
-	var project Project
+	project := Project{}
 
 	pipeline := []bson.M{
 		{
@@ -298,7 +298,7 @@ func (r *ProjectCollRepository) FindOneByID(_id bson.ObjectID) (*Project, error)
 }
 
 func (r *ProjectCollRepository) CountProject(cq *util.CommonQuery) (*CountProjectDetail, error) {
-	var count []CountProjectDetail
+	count := []CountProjectDetail{}
 
 	matchStage := bson.D{{"is_deleted", bson.M{"$ne": true}}}
 
@@ -361,8 +361,8 @@ func (r *ProjectCollRepository) CountProject(cq *util.CommonQuery) (*CountProjec
 	}
 }
 
-func (r *ProjectCollRepository) CountProjectTypes(cq *util.CommonQuery) (*[]CountTypeProject, error) {
-	var count []CountTypeProject
+func (r *ProjectCollRepository) CountProjectTypes(cq *util.CommonQuery) ([]CountTypeProject, error) {
+	count := []CountTypeProject{}
 
 	matchStage := bson.D{
 		{"is_deleted", bson.M{"$ne": true}},
@@ -417,11 +417,11 @@ func (r *ProjectCollRepository) CountProjectTypes(cq *util.CommonQuery) (*[]Coun
 	if err = cursor.All(context.Background(), &count); err != nil {
 		return nil, err
 	}
-	return &count, nil
+	return count, nil
 }
 
 func (r *ProjectCollRepository) InsertOne(projectData *Project) (*Project, error) {
-	var data *Project
+	data := Project{}
 	dataInsert, err := r.coll.InsertOne(context.TODO(), projectData)
 	if err != nil {
 		return nil, err
@@ -432,7 +432,7 @@ func (r *ProjectCollRepository) InsertOne(projectData *Project) (*Project, error
 	if err != nil {
 		return nil, err
 	}
-	return data, nil
+	return &data, nil
 }
 
 func (r *ProjectCollRepository) DeleteOneByID(_id bson.ObjectID) error {

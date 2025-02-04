@@ -26,7 +26,7 @@ type User struct {
 
 func (u *User) MarshalJSON() ([]byte, error) {
 	type Alias User
-	var url string
+	url := ""
 	if u.Avatar != "" {
 		url = "https://" + config.S3.Bucket
 		if !strings.Contains(config.S3.EndPoint, "https://") {
@@ -54,8 +54,8 @@ func NewUserCollRepository(db *mongo.Database) *UserCollRepository {
 	}
 }
 
-func (r *UserCollRepository) FindAllUsers() (*[]User, error) {
-	var users []User
+func (r *UserCollRepository) FindAllUsers() ([]User, error) {
+	users := []User{}
 
 	pipeline := mongo.Pipeline{
 		{{"$match", bson.D{{"is_deleted", bson.D{{"$ne", true}}}}}},
@@ -119,7 +119,7 @@ func (r *UserCollRepository) FindAllUsers() (*[]User, error) {
 	}
 
 	for cursor.Next(context.TODO()) {
-		var user User
+		user := User{}
 		if err := cursor.Decode(&user); err != nil {
 			return nil, err
 		}
@@ -129,11 +129,11 @@ func (r *UserCollRepository) FindAllUsers() (*[]User, error) {
 	if err := cursor.Err(); err != nil {
 		return nil, err
 	}
-	return &users, nil
+	return users, nil
 }
 
 func (r *UserCollRepository) FindOneByID(_id bson.ObjectID) (*User, error) {
-	var user *User
+	user := User{}
 	filter := bson.M{
 		"_id":        _id,
 		"is_deleted": bson.M{"$ne": true},
@@ -143,11 +143,11 @@ func (r *UserCollRepository) FindOneByID(_id bson.ObjectID) (*User, error) {
 	if err != nil {
 		return nil, err
 	}
-	return user, nil
+	return &user, nil
 }
 
 func (r *UserCollRepository) FindOneByEmail(email string) (*User, error) {
-	var user *User
+	user := User{}
 	filter := bson.M{
 		"email":      email,
 		"is_deleted": bson.M{"$ne": true},
@@ -157,11 +157,11 @@ func (r *UserCollRepository) FindOneByEmail(email string) (*User, error) {
 	if err != nil {
 		return nil, err
 	}
-	return user, nil
+	return &user, nil
 }
 
 func (r *UserCollRepository) Insert(userData *User) (*User, error) {
-	var data *User
+	data := User{}
 	dataInsert, err := r.coll.InsertOne(context.TODO(), userData)
 	if err != nil {
 		return nil, err
@@ -172,11 +172,11 @@ func (r *UserCollRepository) Insert(userData *User) (*User, error) {
 	if err != nil {
 		return nil, err
 	}
-	return data, nil
+	return &data, nil
 }
 
 func (r *UserCollRepository) Update(userData *User) (*User, error) {
-	var data *User
+	data := User{}
 	filter := bson.M{"_id": userData.ID, "is_deleted": bson.M{"$ne": true}}
 	update := bson.M{"$set": userData}
 

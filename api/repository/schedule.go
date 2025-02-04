@@ -15,6 +15,8 @@ type Schedule struct {
 	Description string          `json:"description" bson:"description"`
 	StartDate   time.Time       `json:"start_date" bson:"start_date"`
 	EndDate     time.Time       `json:"end_date" bson:"end_date"`
+	StartTime   string          `json:"start_time" bson:"start_time"` // 24-hour format (HH:MM)
+	EndTime     string          `json:"end_time" bson:"end_time"`     // 24-hour format (HH:MM)
 	Contributor []bson.ObjectID `json:"contributor" bson:"contributor"`
 	Type        string          `json:"type" bson:"type"` // meeting, discussion, review, presentation
 	CreatedAt   time.Time       `json:"created_at" bson:"created_at"`
@@ -32,7 +34,7 @@ func NewScheduleCollRepository(db *mongo.Database) *ScheduleCollRepository {
 }
 
 func (r *ScheduleCollRepository) FindAll(cq *util.CommonQuery) ([]Schedule, error) {
-	var schedules []Schedule
+	schedules := []Schedule{}
 	filter := bson.M{"is_deleted": false}
 
 	if len(cq.Q) > 0 {

@@ -3,6 +3,7 @@ package me
 import (
 	"errors"
 	"github.com/labstack/echo/v4"
+	"go.mongodb.org/mongo-driver/v2/bson"
 	"go.mongodb.org/mongo-driver/v2/mongo"
 	"net/http"
 	"proman-backend/api/repository"
@@ -38,6 +39,8 @@ func NewHandler(e *echo.Echo, db *mongo.Database) *Handler {
 	me.PUT("/me", h.updateMyProfile)
 	me.PUT("/me/password", h.updateMyPassword)
 
+	me.GET("/me/schedules", h.mySchedule)
+
 	me.GET("/me/projects", h.myProjects)
 	me.GET("/me/project/count", h.myProjectCount)
 	me.GET("/me/project/count/type", h.myProjectCountByType)
@@ -46,8 +49,6 @@ func NewHandler(e *echo.Echo, db *mongo.Database) *Handler {
 	me.GET("/me/task/count", h.myTaskCount)
 	me.GET("/me/task/overview", h.myTaskOverview)
 	me.GET("/me/task/status", h.myTaskStatus)
-
-	me.GET("/me/schedules", h.mySchedule)
 
 	return h
 }
@@ -229,7 +230,36 @@ func (h *Handler) mySchedule(c echo.Context) error {
 		log.Errorf("Error finding schedule: %v", err)
 		return echo.NewHTTPError(http.StatusInternalServerError, "There was an error, please try again")
 	}
-	return c.JSON(http.StatusOK, schedules)
+
+	response := make([]map[string]interface{}, 0)
+	contributors := map[bson.ObjectID]string{}
+
+	for _, schedule := range schedules {
+		contributorInList := make([]string, 0)
+
+		for _, contributor := range schedule.Contributor {
+			if name, exists := contributors[contributor]; exists {
+				contributorInList = append(contributorInList, name)
+			} else if user, err := h.userRepo.FindOneByID(contributor); err == nil {
+				contributors[contributor] = user.Name
+				contributorInList = append(contributorInList, user.Name)
+			}
+		}
+
+		response = append(response, map[string]interface{}{
+			"id":          schedule.ID,
+			"name":        schedule.Name,
+			"description": schedule.Description,
+			"start_date":  schedule.StartDate,
+			"end_date":    schedule.EndDate,
+			"start_time":  schedule.StartTime,
+			"end_time":    schedule.EndTime,
+			"contributor": contributorInList,
+			"type":        schedule.Type,
+			"created_at":  schedule.CreatedAt,
+		})
+	}
+	return c.JSON(http.StatusOK, response)
 }
 
 // My Projects
@@ -380,8 +410,8 @@ func (h *Handler) myTaskCount(c echo.Context) error {
 		return echo.NewHTTPError(http.StatusInternalServerError, "There was an error, please try again")
 	}
 
-	if len(*count) > 0 {
-		return c.JSON(http.StatusOK, (*count)[0])
+	if len(count) > 0 {
+		return c.JSON(http.StatusOK, count[0])
 	} else {
 		return c.JSON(http.StatusOK, repository.CountProjectDetail{})
 	}
@@ -397,7 +427,7 @@ func (h *Handler) myTaskCount(c echo.Context) error {
 // @Success 200
 // @Security ApiKeyAuth
 func (h *Handler) myTaskOverview(c echo.Context) error {
-	var doc []repository.TaskOverview
+	doc := []repository.TaskOverview{}
 	uc := c.(*context.Context)
 
 	cq := util.NewCommonQuery(c)
@@ -408,7 +438,7 @@ func (h *Handler) myTaskOverview(c echo.Context) error {
 		cq.End = util.EndOfWeek(v)
 
 		count, err := h.taskRepo.CountTask(cq)
-		if err != nil || len(*count) == 0 {
+		if err != nil || len(count) == 0 {
 			doc = append(doc, repository.TaskOverview{
 				Start: cq.Start.Format("02 Jan"),
 				End:   cq.End.Format("02 Jan"),
@@ -421,7 +451,7 @@ func (h *Handler) myTaskOverview(c echo.Context) error {
 		doc = append(doc, repository.TaskOverview{
 			Start: cq.Start.Format("02 Jan"),
 			End:   cq.End.Format("02 Jan"),
-			Count: (*count)[0].Active + (*count)[0].Testing + (*count)[0].Completed,
+			Count: count[0].Active + count[0].Testing + count[0].Completed,
 		})
 	}
 	return c.JSON(http.StatusOK, doc)
