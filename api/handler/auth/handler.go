@@ -89,17 +89,15 @@ func (h *Handler) register(c echo.Context) error {
 	}
 
 	user := &repository.User{
-		ID:           bson.NewObjectID(),
-		Email:        docForm.Email,
-		Password:     util.CryptPassword(docForm.Password),
-		Name:         docForm.Name,
-		Position:     _const.PositionOther,
-		Avatar:       "",
-		Phone:        "",
-		CreatedAt:    time.Now(),
-		IsDeleted:    false,
-		TotalProject: 0,
-		TotalTask:    0,
+		ID:        bson.NewObjectID(),
+		Email:     docForm.Email,
+		Password:  util.CryptPassword(docForm.Password),
+		Name:      docForm.Name,
+		Position:  _const.PositionOther,
+		Avatar:    "",
+		Phone:     "",
+		CreatedAt: time.Now(),
+		IsDeleted: false,
 	}
 
 	doc, err := h.userRepo.Insert(user)

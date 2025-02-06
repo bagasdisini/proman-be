@@ -37,7 +37,7 @@ func calculateTotalPages(totalData, limit, page int64) (int64, bool) {
 		page > int64(math.Ceil(float64(totalData)/float64(limit))) && int(math.Ceil(float64(totalData)/float64(limit))) != 0
 }
 
-func MakeResult(data interface{}, totalData int64, page, limit int64) *PaginationResult {
+func MakePaginateResult(data interface{}, totalData int64, page, limit int64) *PaginationResult {
 	totalPages, pageOutOfRange := calculateTotalPages(totalData, limit, page)
 	if pageOutOfRange {
 		return &PaginationResult{

@@ -16,6 +16,25 @@ func IsValidProjectStatus(projectStatus string) bool {
 	return false
 }
 
+// Project type
+const (
+	ProjectFrontend = "frontend"
+	ProjectBackend  = "backend"
+	ProjectMobile   = "mobile"
+	ProjectDesktop  = "desktop"
+	ProjectMonitor  = "monitor"
+	ProjectTool     = "tool"
+	ProjectEtc      = "etc"
+)
+
+func IsValidProjectType(projectType string) bool {
+	switch projectType {
+	case ProjectFrontend, ProjectBackend, ProjectMobile, ProjectDesktop, ProjectMonitor, ProjectTool, ProjectEtc:
+		return true
+	}
+	return false
+}
+
 // Schedule type
 const (
 	ScheduleMeeting      = "meeting"

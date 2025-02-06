@@ -11,17 +11,15 @@ import (
 )
 
 type User struct {
-	ID           bson.ObjectID `json:"_id" bson:"_id"`
-	Email        string        `json:"email" bson:"email"`
-	Password     string        `json:"-" bson:"password"`
-	Name         string        `json:"name" bson:"name"`
-	Position     string        `json:"position" bson:"position"`
-	Avatar       string        `json:"avatar" bson:"avatar"`
-	Phone        string        `json:"phone" bson:"phone"`
-	CreatedAt    time.Time     `json:"created_at" bson:"created_at"`
-	IsDeleted    bool          `json:"-" bson:"is_deleted"`
-	TotalProject int           `json:"total_project" bson:"total_project"`
-	TotalTask    int           `json:"total_task" bson:"total_task"`
+	ID        bson.ObjectID `json:"_id" bson:"_id"`
+	Email     string        `json:"email" bson:"email"`
+	Password  string        `json:"-" bson:"password"`
+	Name      string        `json:"name" bson:"name"`
+	Position  string        `json:"position" bson:"position"`
+	Avatar    string        `json:"avatar" bson:"avatar"`
+	Phone     string        `json:"phone" bson:"phone"`
+	CreatedAt time.Time     `json:"created_at" bson:"created_at"`
+	IsDeleted bool          `json:"-" bson:"is_deleted"`
 }
 
 func (u *User) MarshalJSON() ([]byte, error) {
@@ -54,8 +52,8 @@ func NewUserCollRepository(db *mongo.Database) *UserCollRepository {
 	}
 }
 
-func (r *UserCollRepository) FindAllUsers() ([]User, error) {
-	users := []User{}
+func (r *UserCollRepository) FindAllUsers() ([]map[string]interface{}, error) {
+	users := []map[string]interface{}{}
 
 	pipeline := mongo.Pipeline{
 		{{"$match", bson.D{{"is_deleted", bson.D{{"$ne", true}}}}}},
@@ -119,7 +117,7 @@ func (r *UserCollRepository) FindAllUsers() ([]User, error) {
 	}
 
 	for cursor.Next(context.TODO()) {
-		user := User{}
+		user := map[string]interface{}{}
 		if err := cursor.Decode(&user); err != nil {
 			return nil, err
 		}

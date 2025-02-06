@@ -153,7 +153,8 @@ const docTemplate = `{
                         "type": "string",
                         "description": "verification_code",
                         "name": "verification_code",
-                        "in": "formData"
+                        "in": "formData",
+                        "required": true
                     }
                 ],
                 "responses": {
@@ -213,7 +214,7 @@ const docTemplate = `{
                     "application/json"
                 ],
                 "tags": [
-                    "Me"
+                    "Me Project"
                 ],
                 "summary": "Get my project count",
                 "operationId": "my-project-count",
@@ -238,7 +239,7 @@ const docTemplate = `{
                     "application/json"
                 ],
                 "tags": [
-                    "Me"
+                    "Me Project"
                 ],
                 "summary": "Get my project count by type",
                 "operationId": "my-project-count-type",
@@ -263,7 +264,7 @@ const docTemplate = `{
                     "application/json"
                 ],
                 "tags": [
-                    "Me"
+                    "Me Project"
                 ],
                 "summary": "Get my projects",
                 "operationId": "my-projects",
@@ -401,7 +402,7 @@ const docTemplate = `{
                     "application/json"
                 ],
                 "tags": [
-                    "Me"
+                    "Me Task"
                 ],
                 "summary": "Get my task count",
                 "operationId": "my-task-count",
@@ -426,7 +427,7 @@ const docTemplate = `{
                     "application/json"
                 ],
                 "tags": [
-                    "Me"
+                    "Me Task"
                 ],
                 "summary": "Get my task overview",
                 "operationId": "my-task-overview",
@@ -451,7 +452,7 @@ const docTemplate = `{
                     "application/json"
                 ],
                 "tags": [
-                    "Me"
+                    "Me Task"
                 ],
                 "summary": "Get my task list by status",
                 "operationId": "my-task-list-status",
@@ -476,7 +477,7 @@ const docTemplate = `{
                     "application/json"
                 ],
                 "tags": [
-                    "Me"
+                    "Me Task"
                 ],
                 "summary": "Get my tasks",
                 "operationId": "my-tasks",
@@ -542,6 +543,15 @@ const docTemplate = `{
                         "required": true
                     },
                     {
+                        "enum": [
+                            "frontend",
+                            "backend",
+                            "mobile",
+                            "desktop",
+                            "monitor",
+                            "tool",
+                            "etc"
+                        ],
                         "type": "string",
                         "description": "Project type",
                         "name": "type",
@@ -561,6 +571,56 @@ const docTemplate = `{
                         "in": "formData"
                     }
                 ],
+                "responses": {
+                    "200": {
+                        "description": "OK"
+                    }
+                }
+            }
+        },
+        "/api/project/count": {
+            "get": {
+                "security": [
+                    {
+                        "ApiKeyAuth": []
+                    }
+                ],
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Project"
+                ],
+                "summary": "Get project count",
+                "operationId": "count-project",
+                "responses": {
+                    "200": {
+                        "description": "OK"
+                    }
+                }
+            }
+        },
+        "/api/project/count/type": {
+            "get": {
+                "security": [
+                    {
+                        "ApiKeyAuth": []
+                    }
+                ],
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Project"
+                ],
+                "summary": "Get project count by type",
+                "operationId": "count-project-type",
                 "responses": {
                     "200": {
                         "description": "OK"
@@ -821,7 +881,114 @@ const docTemplate = `{
                 }
             }
         },
+        "/api/task/count": {
+            "get": {
+                "security": [
+                    {
+                        "ApiKeyAuth": []
+                    }
+                ],
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Task"
+                ],
+                "summary": "Get task count",
+                "operationId": "task-count",
+                "responses": {
+                    "200": {
+                        "description": "OK"
+                    }
+                }
+            }
+        },
+        "/api/task/overview": {
+            "get": {
+                "security": [
+                    {
+                        "ApiKeyAuth": []
+                    }
+                ],
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Task"
+                ],
+                "summary": "Get task overview",
+                "operationId": "task-overview",
+                "responses": {
+                    "200": {
+                        "description": "OK"
+                    }
+                }
+            }
+        },
+        "/api/task/status": {
+            "get": {
+                "security": [
+                    {
+                        "ApiKeyAuth": []
+                    }
+                ],
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Task"
+                ],
+                "summary": "Get task list by status",
+                "operationId": "task-list-status",
+                "responses": {
+                    "200": {
+                        "description": "OK"
+                    }
+                }
+            }
+        },
         "/api/task/{id}": {
+            "get": {
+                "security": [
+                    {
+                        "ApiKeyAuth": []
+                    }
+                ],
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Task"
+                ],
+                "summary": "Get task by ID",
+                "operationId": "task",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Task ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK"
+                    }
+                }
+            },
             "delete": {
                 "security": [
                     {
@@ -855,7 +1022,7 @@ const docTemplate = `{
                 }
             }
         },
-        "/api/user": {
+        "/api/tasks": {
             "get": {
                 "security": [
                     {
@@ -869,10 +1036,10 @@ const docTemplate = `{
                     "application/json"
                 ],
                 "tags": [
-                    "User"
+                    "Task"
                 ],
-                "summary": "Get list users",
-                "operationId": "user-latest",
+                "summary": "Get tasks",
+                "operationId": "tasks",
                 "responses": {
                     "200": {
                         "description": "OK"
@@ -898,6 +1065,31 @@ const docTemplate = `{
                 ],
                 "summary": "Get user count",
                 "operationId": "user-count",
+                "responses": {
+                    "200": {
+                        "description": "OK"
+                    }
+                }
+            }
+        },
+        "/api/users": {
+            "get": {
+                "security": [
+                    {
+                        "ApiKeyAuth": []
+                    }
+                ],
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "User"
+                ],
+                "summary": "Get list users",
+                "operationId": "user-list",
                 "responses": {
                     "200": {
                         "description": "OK"

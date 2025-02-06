@@ -87,7 +87,7 @@ func (h *Handler) myProfile(c echo.Context) error {
 // @Param position formData string false "position"
 // @Param phone formData string false "phone"
 // @Param avatar formData file false "avatar"
-// @Param verification_code formData string false "verification_code"
+// @Param verification_code formData string true "verification_code"
 // @Produce json
 // @Success 200
 // @Security ApiKeyAuth
@@ -263,7 +263,7 @@ func (h *Handler) mySchedule(c echo.Context) error {
 }
 
 // My Projects
-// @Tags Me
+// @Tags Me Project
 // @Summary Get my projects
 // @ID my-projects
 // @Router /api/me/projects [get]
@@ -293,7 +293,7 @@ func (h *Handler) myProjects(c echo.Context) error {
 		return echo.NewHTTPError(http.StatusInternalServerError, "There was an error, please try again")
 	}
 
-	cq.ResetDate()
+	cq.ResetPagination()
 	totalProjects, err := h.projectRepo.CountProject(cq)
 	if err != nil {
 		if errors.Is(err, mongo.ErrNoDocuments) {
@@ -303,12 +303,12 @@ func (h *Handler) myProjects(c echo.Context) error {
 		return echo.NewHTTPError(http.StatusInternalServerError, "There was an error, please try again")
 	}
 
-	result := _mongo.MakeResult(projects, int64(totalProjects.Total), cq.Page, cq.Limit)
+	result := _mongo.MakePaginateResult(projects, int64(totalProjects.Total), cq.Page, cq.Limit)
 	return c.JSON(http.StatusOK, result)
 }
 
 // My Project Count
-// @Tags Me
+// @Tags Me Project
 // @Summary Get my project count
 // @ID my-project-count
 // @Router /api/me/project/count [get]
@@ -330,12 +330,11 @@ func (h *Handler) myProjectCount(c echo.Context) error {
 		log.Errorf("Error counting project: %v", err)
 		return echo.NewHTTPError(http.StatusInternalServerError, "There was an error, please try again")
 	}
-
 	return c.JSON(http.StatusOK, count)
 }
 
 // My Project Count By Type
-// @Tags Me
+// @Tags Me Project
 // @Summary Get my project count by type
 // @ID my-project-count-type
 // @Router /api/me/project/count/type [get]
@@ -361,7 +360,7 @@ func (h *Handler) myProjectCountByType(c echo.Context) error {
 }
 
 // My Tasks
-// @Tags Me
+// @Tags Me Task
 // @Summary Get my tasks
 // @ID my-tasks
 // @Router /api/me/tasks [get]
@@ -387,7 +386,7 @@ func (h *Handler) myTasks(c echo.Context) error {
 }
 
 // My Task Count
-// @Tags Me
+// @Tags Me Task
 // @Summary Get my task count
 // @ID my-task-count
 // @Router /api/me/task/count [get]
@@ -418,7 +417,7 @@ func (h *Handler) myTaskCount(c echo.Context) error {
 }
 
 // My Task Overview
-// @Tags Me
+// @Tags Me Task
 // @Summary Get my task overview
 // @ID my-task-overview
 // @Router /api/me/task/overview [get]
@@ -458,7 +457,7 @@ func (h *Handler) myTaskOverview(c echo.Context) error {
 }
 
 // My Task List By Status
-// @Tags Me
+// @Tags Me Task
 // @Summary Get my task list by status
 // @ID my-task-list-status
 // @Router /api/me/task/status [get]

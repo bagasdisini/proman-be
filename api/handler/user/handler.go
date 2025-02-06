@@ -25,7 +25,7 @@ func NewHandler(e *echo.Echo, db *mongo.Database) *Handler {
 
 	user := e.Group("/api", context.ContextHandler)
 
-	user.GET("/user", h.userList)
+	user.GET("/users", h.userList)
 	user.GET("/user/count", h.userCount)
 
 	return h
@@ -55,8 +55,8 @@ func (h *Handler) userCount(c echo.Context) error {
 // User List
 // @Tags User
 // @Summary Get list users
-// @ID user-latest
-// @Router /api/user [get]
+// @ID user-list
+// @Router /api/users [get]
 // @Accept json
 // @Produce json
 // @Success 200

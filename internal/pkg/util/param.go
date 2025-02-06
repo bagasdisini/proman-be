@@ -41,7 +41,7 @@ func NewCommonQuery(c echo.Context) *CommonQuery {
 		Type:   typeParam,
 		UserId: bson.NilObjectID,
 		Start:  time.UnixMilli(0),
-		End:    time.Date(time.Now().Year(), time.Now().Month(), time.Now().Day(), 23, 59, 59, 0, time.Local),
+		End:    time.UnixMilli(math.MaxInt64),
 
 		Sort:  1,
 		Page:  1,
@@ -127,5 +127,11 @@ func (dr *CommonQuery) ResetAll() *CommonQuery {
 func (dr *CommonQuery) ResetDate() *CommonQuery {
 	dr.Start = time.UnixMilli(0)
 	dr.End = time.Date(time.Now().Year(), time.Now().Month(), time.Now().Day(), 23, 59, 59, 0, time.Local)
+	return dr
+}
+
+func (dr *CommonQuery) ResetPagination() *CommonQuery {
+	dr.Page = 1
+	dr.Limit = math.MaxInt64
 	return dr
 }

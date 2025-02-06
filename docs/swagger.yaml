@@ -156,6 +156,7 @@ paths:
       - description: verification_code
         in: formData
         name: verification_code
+        required: true
         type: string
       produces:
       - application/json
@@ -203,7 +204,7 @@ paths:
       - ApiKeyAuth: []
       summary: Get my project count
       tags:
-      - Me
+      - Me Project
   /api/me/project/count/type:
     get:
       consumes:
@@ -218,7 +219,7 @@ paths:
       - ApiKeyAuth: []
       summary: Get my project count by type
       tags:
-      - Me
+      - Me Project
   /api/me/projects:
     get:
       consumes:
@@ -270,7 +271,7 @@ paths:
       - ApiKeyAuth: []
       summary: Get my projects
       tags:
-      - Me
+      - Me Project
   /api/me/schedules:
     get:
       consumes:
@@ -324,7 +325,7 @@ paths:
       - ApiKeyAuth: []
       summary: Get my task count
       tags:
-      - Me
+      - Me Task
   /api/me/task/overview:
     get:
       consumes:
@@ -339,7 +340,7 @@ paths:
       - ApiKeyAuth: []
       summary: Get my task overview
       tags:
-      - Me
+      - Me Task
   /api/me/task/status:
     get:
       consumes:
@@ -354,7 +355,7 @@ paths:
       - ApiKeyAuth: []
       summary: Get my task list by status
       tags:
-      - Me
+      - Me Task
   /api/me/tasks:
     get:
       consumes:
@@ -369,7 +370,7 @@ paths:
       - ApiKeyAuth: []
       summary: Get my tasks
       tags:
-      - Me
+      - Me Task
   /api/project:
     post:
       consumes:
@@ -402,6 +403,14 @@ paths:
         required: true
         type: string
       - description: Project type
+        enum:
+        - frontend
+        - backend
+        - mobile
+        - desktop
+        - monitor
+        - tool
+        - etc
         in: formData
         name: type
         required: true
@@ -463,6 +472,36 @@ paths:
       security:
       - ApiKeyAuth: []
       summary: Get project by id
+      tags:
+      - Project
+  /api/project/count:
+    get:
+      consumes:
+      - application/json
+      operationId: count-project
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+      security:
+      - ApiKeyAuth: []
+      summary: Get project count
+      tags:
+      - Project
+  /api/project/count/type:
+    get:
+      consumes:
+      - application/json
+      operationId: count-project-type
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+      security:
+      - ApiKeyAuth: []
+      summary: Get project count by type
       tags:
       - Project
   /api/projects:
@@ -604,11 +643,16 @@ paths:
       summary: Delete task
       tags:
       - Task
-  /api/user:
     get:
       consumes:
       - application/json
-      operationId: user-latest
+      operationId: task
+      parameters:
+      - description: Task ID
+        in: path
+        name: id
+        required: true
+        type: string
       produces:
       - application/json
       responses:
@@ -616,9 +660,69 @@ paths:
           description: OK
       security:
       - ApiKeyAuth: []
-      summary: Get list users
+      summary: Get task by ID
       tags:
-      - User
+      - Task
+  /api/task/count:
+    get:
+      consumes:
+      - application/json
+      operationId: task-count
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+      security:
+      - ApiKeyAuth: []
+      summary: Get task count
+      tags:
+      - Task
+  /api/task/overview:
+    get:
+      consumes:
+      - application/json
+      operationId: task-overview
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+      security:
+      - ApiKeyAuth: []
+      summary: Get task overview
+      tags:
+      - Task
+  /api/task/status:
+    get:
+      consumes:
+      - application/json
+      operationId: task-list-status
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+      security:
+      - ApiKeyAuth: []
+      summary: Get task list by status
+      tags:
+      - Task
+  /api/tasks:
+    get:
+      consumes:
+      - application/json
+      operationId: tasks
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+      security:
+      - ApiKeyAuth: []
+      summary: Get tasks
+      tags:
+      - Task
   /api/user/count:
     get:
       consumes:
@@ -632,6 +736,21 @@ paths:
       security:
       - ApiKeyAuth: []
       summary: Get user count
+      tags:
+      - User
+  /api/users:
+    get:
+      consumes:
+      - application/json
+      operationId: user-list
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+      security:
+      - ApiKeyAuth: []
+      summary: Get list users
       tags:
       - User
   /api/verification-code/{email}:

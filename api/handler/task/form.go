@@ -6,7 +6,6 @@ import (
 	"net/http"
 	"proman-backend/internal/pkg/log"
 	"strings"
-	"time"
 )
 
 const (
@@ -24,10 +23,10 @@ type errorDoc struct {
 type taskForm struct {
 	Name        string `json:"name" form:"name"`
 	Description string `json:"description" form:"description"`
-	StartDate   int64  `json:"start_date" form:"start_date"`
-	EndDate     int64  `json:"end_date" form:"end_date"`
 	Contributor string `json:"contributor" form:"contributor"`
 	ProjectID   string `json:"project_id" form:"project_id"`
+	StartDate   int64  `json:"start_date" form:"start_date"`
+	EndDate     int64  `json:"end_date" form:"end_date"`
 }
 
 func newTaskForm(c echo.Context) (*taskForm, error) {
@@ -75,14 +74,6 @@ func newTaskForm(c echo.Context) (*taskForm, error) {
 			Field:   "start_date",
 			Message: "Invalid start date.",
 		})
-	} else {
-		startDate := time.Unix(form.StartDate, 0)
-		if startDate.After(time.Now()) {
-			validationErrors = append(validationErrors, errorDoc{
-				Field:   "start_date",
-				Message: "Start date cannot be in the future.",
-			})
-		}
 	}
 
 	// Validate end date

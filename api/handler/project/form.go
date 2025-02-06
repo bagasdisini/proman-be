@@ -3,9 +3,9 @@ package project
 import (
 	"github.com/labstack/echo/v4"
 	"net/http"
+	_const "proman-backend/internal/pkg/const"
 	"proman-backend/internal/pkg/log"
 	"strings"
-	"time"
 )
 
 const (
@@ -25,10 +25,10 @@ type errorDoc struct {
 type projectForm struct {
 	Name        string `json:"name" form:"name"`
 	Description string `json:"description" form:"description"`
-	StartDate   int64  `json:"start_date" form:"start_date"`
-	EndDate     int64  `json:"end_date" form:"end_date"`
 	Contributor string `json:"contributor" form:"contributor"`
 	Type        string `json:"type" form:"type"`
+	StartDate   int64  `json:"start_date" form:"start_date"`
+	EndDate     int64  `json:"end_date" form:"end_date"`
 }
 
 func newProjectForm(c echo.Context) (*projectForm, error) {
@@ -70,10 +70,10 @@ func newProjectForm(c echo.Context) (*projectForm, error) {
 	}
 
 	// Validate type
-	if len(form.Type) < minTypeLength || len(form.Type) > maxTypeLength {
+	if !_const.IsValidProjectType(form.Type) {
 		validationErrors = append(validationErrors, errorDoc{
 			Field:   "type",
-			Message: "Type must be between 1 and 50 characters.",
+			Message: "Invalid project type.",
 		})
 	}
 
@@ -83,14 +83,6 @@ func newProjectForm(c echo.Context) (*projectForm, error) {
 			Field:   "start_date",
 			Message: "Invalid start date.",
 		})
-	} else {
-		startDate := time.Unix(form.StartDate, 0)
-		if startDate.After(time.Now()) {
-			validationErrors = append(validationErrors, errorDoc{
-				Field:   "start_date",
-				Message: "Start date cannot be in the future.",
-			})
-		}
 	}
 
 	// Validate end date

@@ -33,6 +33,9 @@ func NewHandler(e *echo.Echo, db *mongo.Database) *Handler {
 	project.GET("/projects", h.list)
 	project.GET("/project/:id", h.detail)
 
+	project.GET("/project/count", h.count)
+	project.GET("/project/count/type", h.countByType)
+
 	project.POST("/project", h.create)
 
 	project.DELETE("/project/:id", h.delete)
@@ -92,6 +95,50 @@ func (h *Handler) detail(c echo.Context) error {
 	return c.JSON(http.StatusOK, project)
 }
 
+// Count Project
+// @Tags Project
+// @Summary Get project count
+// @ID count-project
+// @Router /api/project/count [get]
+// @Accept json
+// @Produce json
+// @Success 200
+// @Security ApiKeyAuth
+func (h *Handler) count(c echo.Context) error {
+	cq := util.NewCommonQuery(c)
+	count, err := h.projectRepo.CountProject(cq)
+	if err != nil {
+		if errors.Is(err, mongo.ErrNoDocuments) {
+			return echo.NewHTTPError(http.StatusNotFound, "Project not found")
+		}
+		log.Errorf("Error counting project: %v", err)
+		return echo.NewHTTPError(http.StatusInternalServerError, "There was an error, please try again")
+	}
+	return c.JSON(http.StatusOK, count)
+}
+
+// Count Project By Type
+// @Tags Project
+// @Summary Get project count by type
+// @ID count-project-type
+// @Router /api/project/count/type [get]
+// @Accept json
+// @Produce json
+// @Success 200
+// @Security ApiKeyAuth
+func (h *Handler) countByType(c echo.Context) error {
+	cq := util.NewCommonQuery(c)
+	count, err := h.projectRepo.CountProjectTypes(cq)
+	if err != nil {
+		if errors.Is(err, mongo.ErrNoDocuments) {
+			return echo.NewHTTPError(http.StatusNotFound, "Project not found")
+		}
+		log.Errorf("Error counting project: %v", err)
+		return echo.NewHTTPError(http.StatusInternalServerError, "There was an error, please try again")
+	}
+	return c.JSON(http.StatusOK, count)
+}
+
 // Create Project
 // @Tags Project
 // @Summary Create project
@@ -104,7 +151,7 @@ func (h *Handler) detail(c echo.Context) error {
 // @Param start_date formData int true "Project start date"
 // @Param end_date formData int true "Project end date"
 // @Param contributor formData string true "Project contributor"
-// @Param type formData string true "Project type"
+// @Param type formData string true "Project type" Enums(frontend, backend, mobile, desktop, monitor, tool, etc)
 // @Param logo formData file false "Project logo"
 // @Param attachments formData file false "Project attachments"
 // @Success 200
