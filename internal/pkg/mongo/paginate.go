@@ -41,7 +41,7 @@ func MakePaginateResult(data interface{}, totalData int64, page, limit int64) *P
 	totalPages, pageOutOfRange := calculateTotalPages(totalData, limit, page)
 	if pageOutOfRange {
 		return &PaginationResult{
-			Result: nil,
+			Result: []string{},
 			Total:  totalData,
 			Pages:  totalPages,
 			Page:   page,

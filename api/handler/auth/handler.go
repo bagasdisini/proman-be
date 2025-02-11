@@ -50,14 +50,14 @@ func (h *Handler) login(c echo.Context) error {
 	u, err := h.userRepo.FindOneByEmail(docForm.Email)
 	if err != nil {
 		if errors.Is(err, mongo.ErrNoDocuments) {
-			return echo.NewHTTPError(http.StatusBadRequest, "Wrong username/email or password")
+			return echo.NewHTTPError(http.StatusBadRequest, "Wrong email or password")
 		}
 		log.Errorf("Error finding user: %v", err)
 		return echo.NewHTTPError(http.StatusInternalServerError, "There was an error, please try again")
 	}
 
 	if !util.CheckPassword(u.Password, docForm.Password) {
-		return echo.NewHTTPError(http.StatusBadRequest, "Wrong username/email or password")
+		return echo.NewHTTPError(http.StatusBadRequest, "Wrong email or password")
 	}
 
 	accessToken, err := context.MakeToken(u)
@@ -126,7 +126,8 @@ func (h *Handler) forgotPassword(c echo.Context) error {
 	u, err := h.userRepo.FindOneByEmail(docForm.Email)
 	if err != nil {
 		if errors.Is(err, mongo.ErrNoDocuments) {
-			return echo.NewHTTPError(http.StatusNotFound, "Email not found")
+			log.Warnf("Email not found: %v", docForm.Email)
+			return c.JSON(http.StatusOK, map[string]string{"message": "New password has been sent to your email"})
 		}
 		log.Errorf("Error finding user: %v", err)
 		return echo.NewHTTPError(http.StatusInternalServerError, "There was an error, please try again")

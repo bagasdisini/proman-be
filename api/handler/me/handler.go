@@ -284,6 +284,9 @@ func (h *Handler) myProjects(c echo.Context) error {
 	cq := util.NewCommonQuery(c)
 	cq.UserId = uc.Claims.IDAsObjectID
 
+	limit := cq.Limit
+	page := cq.Page
+
 	projects, err := h.projectRepo.FindAll(cq)
 	if err != nil {
 		if errors.Is(err, mongo.ErrNoDocuments) {
@@ -303,7 +306,7 @@ func (h *Handler) myProjects(c echo.Context) error {
 		return echo.NewHTTPError(http.StatusInternalServerError, "There was an error, please try again")
 	}
 
-	result := _mongo.MakePaginateResult(projects, int64(totalProjects.Total), cq.Page, cq.Limit)
+	result := _mongo.MakePaginateResult(projects, int64(totalProjects.Total), page, limit)
 	return c.JSON(http.StatusOK, result)
 }
 
