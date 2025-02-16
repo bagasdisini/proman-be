@@ -101,6 +101,21 @@ func NewCommonQuery(c echo.Context) *CommonQuery {
 	return &cq
 }
 
+func NilCommonQuery() *CommonQuery {
+	dr := &CommonQuery{}
+	dr.Q = ""
+	dr.Status = ""
+	dr.Type = ""
+	dr.UserId = bson.NilObjectID
+	dr.ProjectId = bson.NilObjectID
+	dr.Start = time.UnixMilli(0)
+	dr.End = time.UnixMilli(math.MaxInt64)
+	dr.Sort = 1
+	dr.Page = 1
+	dr.Limit = math.MaxInt64
+	return dr
+}
+
 func (dr *CommonQuery) PreviousPeriod() *CommonQuery {
 	if dr.Start.Unix() != 0 {
 		interval := dr.End.Unix() - dr.Start.Unix()

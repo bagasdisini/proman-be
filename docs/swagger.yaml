@@ -371,6 +371,81 @@ paths:
       summary: Get my tasks
       tags:
       - Me Task
+  /api/option/project:
+    get:
+      consumes:
+      - application/json
+      operationId: option-project
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+      security:
+      - BasicAuth: []
+      summary: Get project
+      tags:
+      - Option
+  /api/option/type/position:
+    get:
+      consumes:
+      - application/json
+      operationId: option-position
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+      security:
+      - BasicAuth: []
+      summary: Get position
+      tags:
+      - Option
+  /api/option/type/project:
+    get:
+      consumes:
+      - application/json
+      operationId: option-project-type
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+      security:
+      - BasicAuth: []
+      summary: Get project type
+      tags:
+      - Option
+  /api/option/type/schedule:
+    get:
+      consumes:
+      - application/json
+      operationId: option-schedule-type
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+      security:
+      - BasicAuth: []
+      summary: Get schedule type
+      tags:
+      - Option
+  /api/option/user:
+    get:
+      consumes:
+      - application/json
+      operationId: option-user
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+      security:
+      - BasicAuth: []
+      summary: Get user
+      tags:
+      - Option
   /api/project:
     post:
       consumes:

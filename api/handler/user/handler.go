@@ -6,8 +6,10 @@ import (
 	"go.mongodb.org/mongo-driver/v2/mongo"
 	"net/http"
 	"proman-backend/api/repository"
+	"proman-backend/config"
 	"proman-backend/internal/pkg/context"
 	"proman-backend/internal/pkg/log"
+	"strings"
 )
 
 type Handler struct {
@@ -70,5 +72,17 @@ func (h *Handler) userList(c echo.Context) error {
 		log.Errorf("Error finding user: %v", err)
 		return echo.NewHTTPError(http.StatusInternalServerError, "There was an error, please try again")
 	}
+
+	for i, user := range users {
+		if _, ok := user["avatar"].(string); ok && user["avatar"] != "" {
+			url := "https://" + config.S3.Bucket
+			if !strings.Contains(config.S3.EndPoint, "https://") {
+				users[i]["avatar"] = url + "." + config.S3.EndPoint + "/" + users[i]["avatar"].(string)
+			} else {
+				users[i]["avatar"] = url + "." + config.S3.EndPoint[8:] + "/" + users[i]["avatar"].(string)
+			}
+		}
+	}
+
 	return c.JSON(http.StatusOK, users)
 }

@@ -13,6 +13,7 @@ import (
 	"proman-backend/api/handler/auth"
 	"proman-backend/api/handler/code"
 	"proman-backend/api/handler/me"
+	"proman-backend/api/handler/option"
 	"proman-backend/api/handler/project"
 	"proman-backend/api/handler/schedule"
 	"proman-backend/api/handler/task"
@@ -107,6 +108,7 @@ func main() {
 	user.NewHandler(e, db)
 	schedule.NewHandler(e, db)
 	code.NewHandler(e, db)
+	option.NewHandler(e, db)
 
 	log.Fatal(e.Start(fmt.Sprintf(`%v:%v`, config.App.Host, config.App.Port)))
 }

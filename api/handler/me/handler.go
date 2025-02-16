@@ -415,7 +415,7 @@ func (h *Handler) myTaskCount(c echo.Context) error {
 	if len(count) > 0 {
 		return c.JSON(http.StatusOK, count[0])
 	} else {
-		return c.JSON(http.StatusOK, repository.CountProjectDetail{})
+		return c.JSON(http.StatusOK, repository.CountTaskDetail{})
 	}
 }
 
@@ -446,7 +446,6 @@ func (h *Handler) myTaskOverview(c echo.Context) error {
 				End:   cq.End.Format("02 Jan"),
 				Count: 0,
 			})
-			log.Warnf("Error counting task: %v, count: %v", err, count)
 			continue
 		}
 

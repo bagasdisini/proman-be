@@ -143,7 +143,6 @@ func (h *Handler) overview(c echo.Context) error {
 				End:   cq.End.Format("02 Jan"),
 				Count: 0,
 			})
-			log.Warnf("Error counting task: %v, count: %v", err, count)
 			continue
 		}
 

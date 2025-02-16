@@ -35,6 +35,18 @@ func IsValidProjectType(projectType string) bool {
 	return false
 }
 
+func GetAllProjectTypes() []string {
+	return []string{
+		ProjectFrontend,
+		ProjectBackend,
+		ProjectMobile,
+		ProjectDesktop,
+		ProjectMonitor,
+		ProjectTool,
+		ProjectEtc,
+	}
+}
+
 // Schedule type
 const (
 	ScheduleMeeting      = "meeting"
@@ -50,6 +62,16 @@ func IsValidScheduleType(scheduleType string) bool {
 		return true
 	}
 	return false
+}
+
+func GetAllScheduleTypes() []string {
+	return []string{
+		ScheduleMeeting,
+		ScheduleDiscussion,
+		ScheduleReview,
+		SchedulePresentation,
+		ScheduleEtc,
+	}
 }
 
 // Task status
