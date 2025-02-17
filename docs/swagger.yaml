@@ -584,6 +584,43 @@ paths:
       consumes:
       - application/json
       operationId: list-project
+      parameters:
+      - description: Search by nama or description
+        in: query
+        name: q
+        type: string
+      - description: Search by status
+        enum:
+        - active
+        - completed
+        - pending
+        - cancelled
+        in: query
+        name: status
+        type: string
+      - description: Start date
+        in: query
+        name: start
+        type: string
+      - description: End date
+        in: query
+        name: end
+        type: string
+      - description: Sort
+        enum:
+        - asc
+        - desc
+        in: query
+        name: sort
+        type: string
+      - description: Page number pagination
+        in: query
+        name: page
+        type: integer
+      - description: Limit pagination
+        in: query
+        name: limit
+        type: integer
       produces:
       - application/json
       responses:
@@ -818,6 +855,26 @@ paths:
       consumes:
       - application/json
       operationId: user-list
+      parameters:
+      - description: Search by nama
+        in: query
+        name: q
+        type: string
+      - description: Sort
+        enum:
+        - asc
+        - desc
+        in: query
+        name: sort
+        type: string
+      - description: Page number pagination
+        in: query
+        name: page
+        type: integer
+      - description: Limit pagination
+        in: query
+        name: limit
+        type: integer
       produces:
       - application/json
       responses:

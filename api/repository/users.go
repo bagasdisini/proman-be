@@ -6,6 +6,7 @@ import (
 	"go.mongodb.org/mongo-driver/v2/bson"
 	"go.mongodb.org/mongo-driver/v2/mongo"
 	"proman-backend/config"
+	"proman-backend/internal/pkg/util"
 	"strings"
 	"time"
 )
@@ -52,11 +53,23 @@ func NewUserCollRepository(db *mongo.Database) *UserCollRepository {
 	}
 }
 
-func (r *UserCollRepository) FindAllUsers() ([]map[string]interface{}, error) {
+func (r *UserCollRepository) FindAllUsers(cq *util.CommonQuery) ([]map[string]interface{}, error) {
 	users := []map[string]interface{}{}
 
+	matchStage := bson.D{{"is_deleted", bson.D{{"$ne", true}}}}
+
+	if len(cq.Q) > 0 {
+		matchStage = append(matchStage, bson.E{Key: "$or", Value: bson.A{
+			bson.D{{"email", bson.Regex{Pattern: cq.Q, Options: "i"}}},
+			bson.D{{"name", bson.Regex{Pattern: cq.Q, Options: "i"}}},
+		}})
+	}
+
+	skip := (cq.Page - 1) * cq.Limit
+	limit := cq.Limit
+
 	pipeline := mongo.Pipeline{
-		{{"$match", bson.D{{"is_deleted", bson.D{{"$ne", true}}}}}},
+		{{"$match", matchStage}},
 		{{"$lookup", bson.D{
 			{"from", "projects"},
 			{"let", bson.D{{"user_id", "$_id"}}},
@@ -108,7 +121,9 @@ func (r *UserCollRepository) FindAllUsers() ([]map[string]interface{}, error) {
 			}},
 		}}},
 		{{"$unset", bson.A{"projects", "tasks"}}},
-		{{"$sort", bson.D{{"created_at", -1}}}},
+		{{"$sort", bson.D{{"created_at", cq.Sort}}}},
+		{{"$skip", skip}},
+		{{"$limit", limit}},
 	}
 
 	cursor, err := r.coll.Aggregate(context.TODO(), pipeline)

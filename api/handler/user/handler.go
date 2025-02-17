@@ -9,6 +9,8 @@ import (
 	"proman-backend/config"
 	"proman-backend/internal/pkg/context"
 	"proman-backend/internal/pkg/log"
+	_mongo "proman-backend/internal/pkg/mongo"
+	"proman-backend/internal/pkg/util"
 	"strings"
 )
 
@@ -59,12 +61,21 @@ func (h *Handler) userCount(c echo.Context) error {
 // @Summary Get list users
 // @ID user-list
 // @Router /api/users [get]
+// @Param q query string false "Search by nama"
+// @Param sort query string false "Sort" enums(asc,desc)
+// @Param page query int false "Page number pagination"
+// @Param limit query int false "Limit pagination"
 // @Accept json
 // @Produce json
 // @Success 200
 // @Security ApiKeyAuth
 func (h *Handler) userList(c echo.Context) error {
-	users, err := h.userRepo.FindAllUsers()
+	cq := util.NewCommonQuery(c)
+
+	limit := cq.Limit
+	page := cq.Page
+
+	users, err := h.userRepo.FindAllUsers(cq)
 	if err != nil {
 		if errors.Is(err, mongo.ErrNoDocuments) {
 			return echo.NewHTTPError(http.StatusBadRequest, "User not found")
@@ -84,5 +95,16 @@ func (h *Handler) userList(c echo.Context) error {
 		}
 	}
 
-	return c.JSON(http.StatusOK, users)
+	cq.ResetPagination()
+	totalUsers, err := h.userRepo.FindAllUsers(cq)
+	if err != nil {
+		if errors.Is(err, mongo.ErrNoDocuments) {
+			return echo.NewHTTPError(http.StatusBadRequest, "User not found")
+		}
+		log.Errorf("Error finding user: %v", err)
+		return echo.NewHTTPError(http.StatusInternalServerError, "There was an error, please try again")
+	}
+
+	result := _mongo.MakePaginateResult(users, int64(len(totalUsers)), page, limit)
+	return c.JSON(http.StatusOK, result)
 }

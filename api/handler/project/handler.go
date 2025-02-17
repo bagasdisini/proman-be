@@ -12,6 +12,7 @@ import (
 	"proman-backend/internal/pkg/context"
 	"proman-backend/internal/pkg/file"
 	"proman-backend/internal/pkg/log"
+	_mongo "proman-backend/internal/pkg/mongo"
 	"proman-backend/internal/pkg/util"
 	"strings"
 	"time"
@@ -48,12 +49,22 @@ func NewHandler(e *echo.Echo, db *mongo.Database) *Handler {
 // @Summary Get list of project
 // @ID list-project
 // @Router /api/projects [get]
+// @Param q query string false "Search by nama or description"
+// @Param status query string false "Search by status" Enums(active, completed, pending, cancelled)
+// @Param start query string false "Start date"
+// @Param end query string false "End date"
+// @Param sort query string false "Sort" enums(asc,desc)
+// @Param page query int false "Page number pagination"
+// @Param limit query int false "Limit pagination"
 // @Accept json
 // @Produce json
 // @Success 200
 // @Security ApiKeyAuth
 func (h *Handler) list(c echo.Context) error {
 	cq := util.NewCommonQuery(c)
+
+	limit := cq.Limit
+	page := cq.Page
 
 	projects, err := h.projectRepo.FindAll(cq)
 	if err != nil {
@@ -63,7 +74,19 @@ func (h *Handler) list(c echo.Context) error {
 		log.Errorf("Error finding project: %v", err)
 		return echo.NewHTTPError(http.StatusInternalServerError, "There was an error, please try again")
 	}
-	return c.JSON(http.StatusOK, projects)
+
+	cq.ResetPagination()
+	totalProjects, err := h.projectRepo.CountProject(cq)
+	if err != nil {
+		if errors.Is(err, mongo.ErrNoDocuments) {
+			return echo.NewHTTPError(http.StatusNotFound, "Project not found")
+		}
+		log.Errorf("Error counting project: %v", err)
+		return echo.NewHTTPError(http.StatusInternalServerError, "There was an error, please try again")
+	}
+
+	result := _mongo.MakePaginateResult(projects, int64(totalProjects.Total), page, limit)
+	return c.JSON(http.StatusOK, result)
 }
 
 // Get Project

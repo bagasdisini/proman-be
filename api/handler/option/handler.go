@@ -88,7 +88,9 @@ func (h *Handler) scheduleType(c echo.Context) error {
 func (h *Handler) user(c echo.Context) error {
 	response := make([]map[string]interface{}, 0)
 
-	usersDoc, err := h.userRepo.FindAllUsers()
+	cq := util.NilCommonQuery()
+
+	usersDoc, err := h.userRepo.FindAllUsers(cq)
 	if err != nil {
 		return c.JSON(http.StatusOK, response)
 	}
