@@ -481,6 +481,44 @@ const docTemplate = `{
                 ],
                 "summary": "Get my tasks",
                 "operationId": "my-tasks",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Search by nama or description",
+                        "name": "q",
+                        "in": "query"
+                    },
+                    {
+                        "enum": [
+                            "active",
+                            "testing",
+                            "completed",
+                            "cancelled"
+                        ],
+                        "type": "string",
+                        "description": "Search by status",
+                        "name": "status",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "Search by project",
+                        "name": "projectId",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "Start date",
+                        "name": "start",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "End date",
+                        "name": "end",
+                        "in": "query"
+                    }
+                ],
                 "responses": {
                     "200": {
                         "description": "OK"
@@ -1219,6 +1257,50 @@ const docTemplate = `{
                 ],
                 "summary": "Get tasks",
                 "operationId": "tasks",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Search by nama or description",
+                        "name": "q",
+                        "in": "query"
+                    },
+                    {
+                        "enum": [
+                            "active",
+                            "testing",
+                            "completed",
+                            "cancelled"
+                        ],
+                        "type": "string",
+                        "description": "Search by status",
+                        "name": "status",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "Search by contributor",
+                        "name": "userId",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "Search by project",
+                        "name": "projectId",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "Start date",
+                        "name": "start",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "End date",
+                        "name": "end",
+                        "in": "query"
+                    }
+                ],
                 "responses": {
                     "200": {
                         "description": "OK"

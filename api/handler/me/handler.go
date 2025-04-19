@@ -367,6 +367,11 @@ func (h *Handler) myProjectCountByType(c echo.Context) error {
 // @Summary Get my tasks
 // @ID my-tasks
 // @Router /api/me/tasks [get]
+// @Param q query string false "Search by nama or description"
+// @Param status query string false "Search by status" Enums(active, testing, completed, cancelled)
+// @Param projectId query string false "Search by project"
+// @Param start query string false "Start date"
+// @Param end query string false "End date"
 // @Accept json
 // @Produce json
 // @Success 200

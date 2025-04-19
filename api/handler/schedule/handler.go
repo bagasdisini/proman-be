@@ -111,7 +111,7 @@ func (h *Handler) create(c echo.Context) error {
 	for _, user := range strings.Split(form.Contributor, ",") {
 		userOId, err := bson.ObjectIDFromHex(user)
 		if err != nil {
-			return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("Invalid contributor ID: %s", user))
+			return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("Invalid contributor ID"))
 		}
 		contributorsOId = append(contributorsOId, userOId)
 	}
