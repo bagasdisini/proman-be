@@ -3,6 +3,7 @@ package user
 import (
 	"errors"
 	"github.com/labstack/echo/v4"
+	"go.mongodb.org/mongo-driver/v2/bson"
 	"go.mongodb.org/mongo-driver/v2/mongo"
 	"net/http"
 	"proman-backend/api/repository"
@@ -30,6 +31,7 @@ func NewHandler(e *echo.Echo, db *mongo.Database) *Handler {
 	user := e.Group("/api", context.ContextHandler)
 
 	user.GET("/users", h.userList)
+	user.GET("/user/:id", h.user)
 	user.GET("/user/count", h.userCount)
 
 	return h
@@ -54,6 +56,38 @@ func (h *Handler) userCount(c echo.Context) error {
 		return echo.NewHTTPError(http.StatusInternalServerError, "There was an error, please try again")
 	}
 	return c.JSON(http.StatusOK, count)
+}
+
+// User
+// @Tags User
+// @Summary Get user
+// @ID user
+// @Router /api/user/{id} [get]
+// @Param id path string true "User ID"
+// @Accept json
+// @Produce json
+// @Success 200
+// @Security ApiKeyAuth
+func (h *Handler) user(c echo.Context) error {
+	id := c.Param("id")
+	if id == "" {
+		return echo.NewHTTPError(http.StatusBadRequest, "User ID cannot be empty.")
+	}
+
+	objectID, err := bson.ObjectIDFromHex(id)
+	if err != nil {
+		return echo.NewHTTPError(http.StatusBadRequest, "Invalid user ID.")
+	}
+
+	user, err := h.userRepo.FindOneByID(objectID)
+	if err != nil {
+		if errors.Is(err, mongo.ErrNoDocuments) {
+			return echo.NewHTTPError(http.StatusBadRequest, "User not found")
+		}
+		log.Errorf("Error finding user: %v", err)
+		return echo.NewHTTPError(http.StatusInternalServerError, "There was an error, please try again")
+	}
+	return c.JSON(http.StatusOK, user)
 }
 
 // User List
