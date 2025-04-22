@@ -68,6 +68,21 @@ definitions:
       start_date:
         type: integer
     type: object
+  task.updateTaskForm:
+    properties:
+      contributor:
+        type: string
+      description:
+        type: string
+      end_date:
+        type: integer
+      name:
+        type: string
+      start_date:
+        type: integer
+      status:
+        type: string
+    type: object
 info:
   contact: {}
   description: Proman Backend API
@@ -799,6 +814,32 @@ paths:
       security:
       - ApiKeyAuth: []
       summary: Get task by ID
+      tags:
+      - Task
+    put:
+      consumes:
+      - application/json
+      operationId: task-update
+      parameters:
+      - description: Task ID
+        in: path
+        name: id
+        required: true
+        type: string
+      - description: Update task data
+        in: body
+        name: body
+        required: true
+        schema:
+          $ref: '#/definitions/task.updateTaskForm'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+      security:
+      - ApiKeyAuth: []
+      summary: Update task
       tags:
       - Task
   /api/task/count:

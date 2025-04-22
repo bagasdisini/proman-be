@@ -1206,6 +1206,47 @@ const docTemplate = `{
                     }
                 }
             },
+            "put": {
+                "security": [
+                    {
+                        "ApiKeyAuth": []
+                    }
+                ],
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Task"
+                ],
+                "summary": "Update task",
+                "operationId": "task-update",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Task ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "description": "Update task data",
+                        "name": "body",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/task.updateTaskForm"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK"
+                    }
+                }
+            },
             "delete": {
                 "security": [
                     {
@@ -1560,6 +1601,29 @@ const docTemplate = `{
                 },
                 "start_date": {
                     "type": "integer"
+                }
+            }
+        },
+        "task.updateTaskForm": {
+            "type": "object",
+            "properties": {
+                "contributor": {
+                    "type": "string"
+                },
+                "description": {
+                    "type": "string"
+                },
+                "end_date": {
+                    "type": "integer"
+                },
+                "name": {
+                    "type": "string"
+                },
+                "start_date": {
+                    "type": "integer"
+                },
+                "status": {
+                    "type": "string"
                 }
             }
         }

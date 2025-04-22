@@ -238,6 +238,20 @@ func (r *TaskCollRepository) CountUserTask(userRepo *UserCollRepository) (*Count
 	return result, nil
 }
 
+func (r *TaskCollRepository) UpdateOneByID(task *Task) error {
+	filter := bson.M{
+		"_id":        task.ID,
+		"is_deleted": bson.M{"$ne": true},
+	}
+	update := bson.M{"$set": task}
+
+	_, err := r.coll.UpdateOne(context.TODO(), filter, update)
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
 func (r *TaskCollRepository) DeleteOneByID(_id bson.ObjectID) error {
 	filter := bson.M{
 		"_id": _id,

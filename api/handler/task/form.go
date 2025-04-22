@@ -4,6 +4,7 @@ import (
 	"github.com/labstack/echo/v4"
 	"go.mongodb.org/mongo-driver/v2/bson"
 	"net/http"
+	_const "proman-backend/internal/pkg/const"
 	"proman-backend/internal/pkg/log"
 	"strings"
 )
@@ -82,7 +83,7 @@ func newTaskForm(c echo.Context) (*taskForm, error) {
 			Field:   "end_date",
 			Message: "Invalid end date.",
 		})
-	} else if form.EndDate <= form.StartDate {
+	} else if form.EndDate < form.StartDate {
 		validationErrors = append(validationErrors, errorDoc{
 			Field:   "end_date",
 			Message: "End date must be after the start date.",
@@ -99,6 +100,83 @@ func newTaskForm(c echo.Context) (*taskForm, error) {
 		validationErrors = append(validationErrors, errorDoc{
 			Field:   "project_id",
 			Message: "Invalid project ID.",
+		})
+	}
+
+	if len(validationErrors) > 0 {
+		return nil, echo.NewHTTPError(http.StatusBadRequest, map[string]interface{}{
+			"errors": validationErrors,
+		})
+	}
+	return form, nil
+}
+
+type updateTaskForm struct {
+	Name        string `json:"name" form:"name"`
+	Description string `json:"description" form:"description"`
+	Contributor string `json:"contributor" form:"contributor"`
+	StartDate   int64  `json:"start_date" form:"start_date"`
+	EndDate     int64  `json:"end_date" form:"end_date"`
+	Status      string `json:"status" form:"status"`
+}
+
+func newUpdateTaskForm(c echo.Context) (*updateTaskForm, error) {
+	form := new(updateTaskForm)
+	if err := c.Bind(form); err != nil {
+		log.Errorf("Error binding update task form: %v", err)
+		return nil, echo.NewHTTPError(http.StatusBadRequest, "Invalid data format.")
+	}
+
+	// Sanitize inputs
+	form.Name = strings.TrimSpace(form.Name)
+	form.Description = strings.TrimSpace(form.Description)
+	form.Contributor = strings.TrimSpace(form.Contributor)
+	form.Status = strings.TrimSpace(form.Status)
+
+	validationErrors := make([]errorDoc, 0)
+
+	// Validate name
+	if len(form.Name) != 0 && (len(form.Name) < minNameLength || len(form.Name) > maxNameLength) {
+		validationErrors = append(validationErrors, errorDoc{
+			Field:   "name",
+			Message: "Name must be between 1 and 100 characters.",
+		})
+	}
+
+	// Validate description
+	if len(form.Description) != 0 && (len(form.Description) < minDescriptionLength || len(form.Description) > maxDescriptionLength) {
+		validationErrors = append(validationErrors, errorDoc{
+			Field:   "description",
+			Message: "Description must be between 10 and 1000 characters.",
+		})
+	}
+
+	// Validate start date
+	if form.StartDate < 0 {
+		validationErrors = append(validationErrors, errorDoc{
+			Field:   "start_date",
+			Message: "Invalid start date.",
+		})
+	}
+
+	// Validate end date
+	if form.EndDate < 0 {
+		validationErrors = append(validationErrors, errorDoc{
+			Field:   "end_date",
+			Message: "Invalid end date.",
+		})
+	} else if form.EndDate < form.StartDate {
+		validationErrors = append(validationErrors, errorDoc{
+			Field:   "end_date",
+			Message: "End date must be after the start date.",
+		})
+	}
+
+	// Validate status
+	if len(form.Status) != 0 && !_const.IsValidTaskStatus(form.Status) {
+		validationErrors = append(validationErrors, errorDoc{
+			Field:   "status",
+			Message: "Invalid status.",
 		})
 	}
 

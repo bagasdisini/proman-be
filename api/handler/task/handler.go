@@ -34,6 +34,8 @@ func NewHandler(e *echo.Echo, db *mongo.Database) *Handler {
 
 	task.POST("/task", h.create)
 
+	task.PUT("/task/:id", h.update)
+
 	task.DELETE("/task/:id", h.delete)
 
 	return h
@@ -255,6 +257,80 @@ func (h *Handler) create(c echo.Context) error {
 	err = h.taskRepo.CreateOne(&task)
 	if err != nil {
 		log.Errorf("Failed to create task: %v", err)
+		return echo.NewHTTPError(http.StatusInternalServerError, "There was an error, please try again")
+	}
+	return c.JSON(http.StatusOK, task)
+}
+
+// Update Task
+// @Tags Task
+// @Summary Update task
+// @ID task-update
+// @Router /api/task/{id} [put]
+// @Accept json
+// @Produce json
+// @Param id path string true "Task ID"
+// @Param body body updateTaskForm true "Update task data"
+// @Success 200
+// @Security ApiKeyAuth
+func (h *Handler) update(c echo.Context) error {
+	id := c.Param("id")
+	if id == "" {
+		return echo.NewHTTPError(http.StatusBadRequest, "Invalid task ID.")
+	}
+
+	objectID, err := bson.ObjectIDFromHex(id)
+	if err != nil {
+		return echo.NewHTTPError(http.StatusBadRequest, "Invalid task ID.")
+	}
+
+	form, err := newUpdateTaskForm(c)
+	if err != nil {
+		return err
+	}
+
+	contributorsOId := make([]bson.ObjectID, 0)
+	if len(form.Contributor) != 0 {
+		for _, user := range strings.Split(form.Contributor, ",") {
+			userOId, err := bson.ObjectIDFromHex(user)
+			if err != nil {
+				return echo.NewHTTPError(http.StatusBadRequest, "Invalid contributor.")
+			}
+			contributorsOId = append(contributorsOId, userOId)
+		}
+	}
+
+	task, err := h.taskRepo.FindOneByID(objectID)
+	if err != nil {
+		if errors.Is(err, mongo.ErrNoDocuments) {
+			return echo.NewHTTPError(http.StatusNotFound, "Task not found")
+		}
+		log.Errorf("Error finding task: %v", err)
+		return echo.NewHTTPError(http.StatusInternalServerError, "There was an error, please try again")
+	}
+
+	if len(form.Name) != 0 {
+		task.Name = form.Name
+	}
+	if len(form.Description) != 0 {
+		task.Description = form.Description
+	}
+	if form.StartDate != 0 {
+		task.StartDate = time.UnixMilli(form.StartDate)
+	}
+	if form.EndDate != 0 {
+		task.EndDate = time.UnixMilli(form.EndDate)
+	}
+	if len(form.Contributor) != 0 {
+		task.Contributor = contributorsOId
+	}
+	if len(form.Status) != 0 {
+		task.Status = form.Status
+	}
+
+	err = h.taskRepo.UpdateOneByID(task)
+	if err != nil {
+		log.Errorf("Failed to update task: %v", err)
 		return echo.NewHTTPError(http.StatusInternalServerError, "There was an error, please try again")
 	}
 	return c.JSON(http.StatusOK, task)
