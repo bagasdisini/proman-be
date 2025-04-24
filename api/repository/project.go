@@ -435,6 +435,20 @@ func (r *ProjectCollRepository) InsertOne(projectData *Project) (*Project, error
 	return &data, nil
 }
 
+func (r *ProjectCollRepository) UpdateOneByID(projectData *Project) error {
+	filter := bson.M{
+		"_id":        projectData.ID,
+		"is_deleted": bson.M{"$ne": true},
+	}
+	update := bson.M{"$set": projectData}
+
+	_, err := r.coll.UpdateOne(context.TODO(), filter, update)
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
 func (r *ProjectCollRepository) DeleteOneByID(_id bson.ObjectID) error {
 	_, err := r.coll.UpdateOne(context.TODO(), bson.M{"_id": _id}, bson.M{"$set": bson.M{"is_deleted": true}})
 	if err != nil {
